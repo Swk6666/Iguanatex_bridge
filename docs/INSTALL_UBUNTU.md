@@ -10,7 +10,7 @@
 | Python | Python 3.10 或更高版本，并有 `venv` 模块 |
 | LaTeX | 推荐 XeLaTeX，中文需要相应 TeX 宏包和字体 |
 | 网络 | 首次安装需要下载系统及 Python 依赖 |
-| 安装文件 | 本项目 ZIP；可选携带同名 `.zip.sha256` 校验文件 |
+| 安装文件 | 本项目 ZIP 和同名 `.zip.sha256` 校验文件，下方命令会一起下载 |
 
 插件不包含 WPS、Python 或 TeX Live。WPS 安装包需来自你有权使用的发行渠道；选择与你当前电脑相同、已验证的版本有助于减少差异。加载项功能是 WPS 版本的能力，见 [WPS 官方加载项说明](https://open.wps.cn/documents/app-integration-dev/wps365/client/wpsoffice/jsapi/addin-api/wps-addin-availability)。
 
@@ -18,7 +18,7 @@
 
 ## 首次安装
 
-先登录有权访问此仓库的 GitHub 账号，打开 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest)，下载 ZIP 和对应 `.sha256` 文件。也可从已有电脑直接复制这两个文件。
+下面使用命令行完成依赖安装、私有仓库下载、校验、解压和插件注册。首次 GitHub 登录需要按终端提示完成浏览器授权。也可从 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) 下载 ZIP 和对应 `.sha256` 文件，或从已有电脑复制这两个文件，然后选择下方“已有安装包”的步骤。
 
 本仓库是私有仓库，未登录或账号无权限时，GitHub 可能显示 404。安装包可在两台电脑之间复制，目标电脑不必配置 Git。需要开发源码时，才使用 Git 克隆私有仓库。
 
@@ -46,34 +46,82 @@ xelatex --version
 
 Python 应为 3.10 或更高，XeLaTeX 应能显示版本。如果已有自行安装的 TeX Live，也可以继续使用，但其可执行文件必须能被后台服务找到；系统包方式通常更省事。
 
-### 3. 解压到固定目录
+### 3. 下载并解压到固定目录
 
-建议安装到 `~/Applications/iguanatex_bridge`。
+建议安装到 `~/Applications/iguanatex_bridge`。以下两种方式任选一种，均不需要手工解压。
 
-可以用文件管理器解压：先创建主目录下的 `Applications`，再把 ZIP 内的 **iguanatex_bridge** 文件夹放进去。
+#### 方式 A：从私有仓库命令行下载
 
-也可用终端。把下面第一条命令中的 `/安装包所在目录/` 替换成你实际保存安装包的目录：
+先安装 GitHub CLI。以下命令使用 [GitHub CLI 官方 APT 源](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian)；官方文档说明 Ubuntu 源中的旧版 2.45 / 2.46 存在 GitHub API 兼容问题，因此这里配置官方源。已经从官方源安装了新版 `gh` 时可跳过此段。
 
 ```bash
-cd "/安装包所在目录/"
-mkdir -p "$HOME/Applications"
-unzip IguanaTex_Bridge_WPS_v0.3.2.zip -d "$HOME/Applications"
+(
+set -e
+sudo apt update
+sudo apt install curl ca-certificates
+bridge_keyring="$(mktemp)"
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o "$bridge_keyring"
+sudo install -d -m 755 /etc/apt/keyrings /etc/apt/sources.list.d
+sudo install -m 644 "$bridge_keyring" /etc/apt/keyrings/githubcli-archive-keyring.gpg
+printf '%s\n' "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update
+sudo apt install gh
+)
 ```
 
-如果带了校验文件，在安装包目录中运行：
+用普通用户登录一次，按终端提示完成授权，账号需要有权访问 `Swk6666/Iguanatex_bridge`。已登录正确账号时可跳过。参见 [GitHub CLI 登录说明](https://cli.github.com/manual/gh_auth_login)。
 
 ```bash
+gh auth login --hostname github.com --git-protocol https --web
+```
+
+登录成功后，整段复制执行，自动下载本版 ZIP 和校验文件，校验成功后解压：
+
+```bash
+(
+set -e
+if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/iguanatex_bridge" ]; then
+    echo '已有安装目录，请按文档中的升级流程操作。' >&2
+    exit 1
+fi
+bridge_download_dir="$(mktemp -d)"
+gh release download v0.3.2 --repo Swk6666/Iguanatex_bridge \
+    --pattern 'IguanaTex_Bridge_WPS_v0.3.2.zip*' --dir "$bridge_download_dir"
+cd "$bridge_download_dir"
 sha256sum -c IguanaTex_Bridge_WPS_v0.3.2.zip.sha256
+mkdir -p "$HOME/Applications"
+unzip -q IguanaTex_Bridge_WPS_v0.3.2.zip -d "$HOME/Applications"
+)
 ```
 
-结果应为 `OK`。首次安装的目标目录应为空；已有旧版时请使用下方升级流程。
+这里使用 [gh release download](https://cli.github.com/manual/gh_release_download) 下载指定版本的发布附件；私有附件需通过上述登录访问。下载暂存在系统临时目录，解压后的程序保存在 `~/Applications/iguanatex_bridge`。
+
+#### 方式 B：已有安装包，只需命令行解压
+
+跳过 GitHub CLI 安装及登录，把下面的 `/安装包所在目录/` 换成 ZIP 和校验文件实际所在的目录，再整段执行：
+
+```bash
+(
+set -e
+cd "/安装包所在目录/"
+if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/iguanatex_bridge" ]; then
+    echo '已有安装目录，请按文档中的升级流程操作。' >&2
+    exit 1
+fi
+sha256sum -c IguanaTex_Bridge_WPS_v0.3.2.zip.sha256
+mkdir -p "$HOME/Applications"
+unzip -q IguanaTex_Bridge_WPS_v0.3.2.zip -d "$HOME/Applications"
+)
+```
+
+两种方式的校验结果都应为 `OK`（中文环境也可能显示“成功”）。括号和 `set -e` 会让这组命令在出错时停止，校验失败不会继续解压。已有旧版时请使用下方升级流程。
 
 ### 4. 运行安装脚本
 
 使用你日常登录和运行 WPS 的普通用户执行。这里**不要加 `sudo`**，否则会注册到错误用户的目录。
 
 ```bash
-cd "$HOME/Applications/iguanatex_bridge"
+cd "$HOME/Applications/iguanatex_bridge" &&
 bash install_wps_linux_mac.sh
 ```
 

@@ -27,12 +27,27 @@ sudo apt update
 sudo apt install python3 python3-venv unzip texlive-xetex texlive-latex-extra texlive-fonts-recommended texlive-lang-chinese
 ```
 
-把 ZIP 中的 `iguanatex_bridge` 文件夹解压到 `~/Applications/`，用普通用户运行：
+下载、解压和安装都可以用命令行完成。从私有仓库直接下载的完整命令见 [命令行下载步骤](docs/INSTALL_UBUNTU.md#3-下载并解压到固定目录)，首次需要登录有权访问仓库的 GitHub 账号。
+
+**已有 ZIP 和同名 `.zip.sha256` 文件时**，把下面的 `/安装包所在目录/` 换成实际路径，整段复制执行，即可校验、解压到 `~/Applications/` 并安装。使用日常运行 WPS 的普通用户，**不要加 `sudo`**：
 
 ```bash
+(
+set -e
+cd "/安装包所在目录/"
+if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/iguanatex_bridge" ]; then
+    echo '已有安装目录，请按文档中的升级流程操作。' >&2
+    exit 1
+fi
+sha256sum -c IguanaTex_Bridge_WPS_v0.3.2.zip.sha256
+mkdir -p "$HOME/Applications"
+unzip -q IguanaTex_Bridge_WPS_v0.3.2.zip -d "$HOME/Applications"
 cd "$HOME/Applications/iguanatex_bridge"
 bash install_wps_linux_mac.sh
+)
 ```
+
+命令遇到下载包损坏或目录已存在时会停止，不会继续安装；已有版本请看 [升级与迁移](docs/INSTALL_UBUNTU.md#升级与迁移)。
 
 保存文稿并完全退出、重新打开 WPS 演示，顶部应出现 **IguanaTex**。详细验收及故障处理见 [完整安装说明](docs/INSTALL_UBUNTU.md)。
 
