@@ -20,6 +20,7 @@ examples/compatibility_test.pptx
 examples/font_size_test.pptx
 examples/wps_roundtrip_test.pptx
 install_wps.py
+install.sh
 install_wps_linux_mac.sh
 install_wps_windows.bat
 requirements.txt
@@ -27,6 +28,7 @@ scripts/build_release.py
 start_linux_mac.sh
 start_windows.bat
 test_bridge.py
+test_install.py
 test_wps.py
 test_wps_adapter.js
 test_wps_editor.js

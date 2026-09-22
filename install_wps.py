@@ -152,7 +152,7 @@ def main():
         autostart(args.port)
     launch(args.port)
     config = register(directory, args.port)
-    print(f'已安装 IguanaTex Bridge 0.3.2。配置：{config}')
+    print(f'已安装 IguanaTex Bridge 0.3.3。配置：{config}')
     print('保存工作并重新启动 WPS 演示后，顶部将出现 IguanaTex 功能区。')
     print(f'本地服务：http://127.0.0.1:{args.port}/health')
     print('安装目录请保留；移动目录后重新运行安装脚本。')

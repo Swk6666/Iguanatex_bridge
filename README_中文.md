@@ -1,4 +1,4 @@
-# IguanaTex Bridge 0.3.2 · WPS 公式插件
+# IguanaTex Bridge 0.3.3 · WPS 公式插件
 
 在 Ubuntu 的 **WPS 演示顶部 IguanaTex 功能区**中直接新建和编辑 LaTeX 公式。完整源码随 PPTX 保存，使用 IguanaTex 的原生标签格式，供 Windows / macOS 的 PowerPoint + IguanaTex 继续编辑。
 
@@ -41,18 +41,13 @@ Shape 默认**保留原宽高**，避免改变已有排版；也可选择“保�
 
 需要 Python 3.10+、支持 JS 加载项的 WPS 演示和本机 LaTeX。已有 TeX Live 时可以先用 `xelatex --version` 检查。
 
-Ubuntu 缺少依赖时：
+Ubuntu 推荐直接克隆仓库，然后在项目目录执行：
 
 ```bash
-sudo apt update
-sudo apt install python3-venv texlive-xetex texlive-latex-extra texlive-fonts-recommended texlive-lang-chinese
+bash install.sh
 ```
 
-进入解压后的 `iguanatex_bridge` 文件夹运行：
-
-```bash
-bash install_wps_linux_mac.sh
-```
+脚本自动补齐 Ubuntu 的 Python / venv、XeLaTeX 和中文宏包。使用普通用户运行，仅安装系统包时会提示 `sudo` 密码。具体克隆、身份验证、升级和卸载步骤见 [Ubuntu 安装说明](docs/INSTALL_UBUNTU.md)。
 
 脚本建立 `.venv`、安装 Python 依赖、启动本地服务，并合并 WPS 的 `publish.xml`，不会覆盖其他加载项。修改已有配置前会保存带时间戳的备份。
 

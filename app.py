@@ -47,7 +47,7 @@ def create_server(port=0, cache_dir=None):
                 self.reply({'token': token})
                 return
             if path == '/health':
-                self.reply({'app': 'IguanaTexBridge', 'version': '0.3.2'})
+                self.reply({'app': 'IguanaTexBridge', 'version': '0.3.3'})
                 return
             assets = {'/': ('ui.html', 'text/html; charset=utf-8'),
                       '/wps/': ('wps_addin/index.html', 'text/html; charset=utf-8'),
@@ -154,7 +154,7 @@ def main():
         return
     server = create_server(args.port)
     url = f'http://127.0.0.1:{server.server_port}/'
-    print('IguanaTex Bridge 0.3.2，按 Ctrl+C 退出。', flush=True)
+    print('IguanaTex Bridge 0.3.3，按 Ctrl+C 退出。', flush=True)
     print('本地界面：' + url, flush=True)
     if not args.no_browser:
         webbrowser.open(url)

@@ -1,144 +1,117 @@
 # Ubuntu 安装与维护
 
-适用安装包：**IguanaTex_Bridge_WPS_v0.3.2.zip**。目标是在另一台 Ubuntu 的 WPS 演示工具栏中直接使用插件。下面操作在目标电脑执行，安装一次即可。
+当前版本：**0.3.3**。推荐克隆私有仓库，然后运行 `bash install.sh`；同一脚本也能在解压后的安装包中运行。
 
 ## 安装前准备
 
-| 项目 | 要求 |
-| --- | --- |
-| WPS | WPS 演示支持 JS 加载项。已实测 WPS 365 教育版 12.8.2.21176；其他版本需确认此能力 |
-| Python | Python 3.10 或更高版本，并有 `venv` 模块 |
-| LaTeX | 推荐 XeLaTeX，中文需要相应 TeX 宏包和字体 |
-| 网络 | 首次安装需要下载系统及 Python 依赖 |
-| 安装文件 | 本项目 ZIP 和同名 `.zip.sha256` 校验文件，下方命令会一起下载 |
-
-插件不包含 WPS、Python 或 TeX Live。WPS 安装包需来自你有权使用的发行渠道；选择与你当前电脑相同、已验证的版本有助于减少差异。加载项功能是 WPS 版本的能力，见 [WPS 官方加载项说明](https://open.wps.cn/documents/app-integration-dev/wps365/client/wpsoffice/jsapi/addin-api/wps-addin-availability)。
+- 已安装支持 **JS 加载项**的 WPS 演示，并能新建和保存 `.pptx`。本项目已实测 WPS 365 教育版 12.8.2.21176；其他版本需确认加载项能力。WPS 本身需要单独安装，插件脚本不会下载 WPS。
+- 使用日常运行 WPS 的普通用户。缺少系统包时，需要该用户能够使用 `sudo`。
+- 首次安装需要联网访问 GitHub、Ubuntu 软件源和 Python 包源；Python / venv 和 TeX Live 可由脚本自动安装。Python 最低为 3.10，Ubuntu 软件源仍提供更旧 Python 时需要先升级系统或自行准备受支持的 Python。
+- 私有仓库需要有访问权限的 GitHub 账号。已经克隆或拿到 ZIP 后，安装脚本本身不需要 GitHub 登录。
 
 安装完成后公式在本机编译，日常不需要 Codex、PowerPoint、Node.js 或手动开终端。Ubuntu 端使用本插件；Windows / Mac 的 PowerPoint 端按需使用上游 IguanaTex。
 
-## 首次安装
+## 推荐：克隆后一键安装
 
-下面使用命令行完成依赖安装、私有仓库下载、校验、解压和插件注册。首次 GitHub 登录需要按终端提示完成浏览器授权。也可从 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) 下载 ZIP 和对应 `.sha256` 文件，或从已有电脑复制这两个文件，然后选择下方“已有安装包”的步骤。
+### 1. 准备 Git 和仓库访问
 
-本仓库是私有仓库，未登录或账号无权限时，GitHub 可能显示 404。安装包可在两台电脑之间复制，目标电脑不必配置 Git。需要开发源码时，才使用 Git 克隆私有仓库。
-
-### 1. 准备 WPS
-
-在目标 Ubuntu 上安装 WPS，打开一次 **WPS 演示**，确认能新建和保存 `.pptx`。记录“关于 WPS”中的版本号。已经安装 WPS 时不必重复安装。
-
-### 2. 安装系统依赖
-
-打开终端，执行：
+如果 `git --version` 能显示版本，可跳过安装 Git：
 
 ```bash
-sudo apt update
-sudo apt install python3 python3-venv unzip texlive-xetex texlive-latex-extra texlive-fonts-recommended texlive-lang-chinese
+sudo apt update && sudo apt install -y git
 ```
 
-这些命令需要系统安装权限；TeX 相关包下载较大，请等终端执行完毕。APT 会跳过已经满足的依赖。
+如果当前电脑已配置能访问此仓库的 Git HTTPS 凭据，继续下一步即可。已配置 SSH 密钥时，把下一步的仓库 URL 换成 `git@github.com:Swk6666/Iguanatex_bridge.git`。使用 HTTPS 克隆且提示 Username / Password 时，输入 GitHub 用户名和有权读取该仓库的个人访问令牌；Password 处不是 GitHub 账户密码。不要把令牌写进仓库 URL、安装脚本或发送到聊天中。令牌设置见 [GitHub 官方说明](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)。
 
-检查：
+如果已安装 GitHub CLI，也可以通过下面两条命令完成登录及 Git 凭据配置，再使用下一步的 HTTPS 克隆命令：
 
 ```bash
-python3 --version
-xelatex --version
+gh auth login --hostname github.com --git-protocol https --web &&
+gh auth setup-git
 ```
 
-Python 应为 3.10 或更高，XeLaTeX 应能显示版本。如果已有自行安装的 TeX Live，也可以继续使用，但其可执行文件必须能被后台服务找到；系统包方式通常更省事。
+登录方式说明见 [GitHub CLI 官方文档](https://cli.github.com/manual/gh_auth_login)。首次浏览器授权需要本人完成，插件脚本不保存 GitHub 凭据。仓库显示 404 或拒绝克隆时，先确认登录账号和仓库访问权限。
 
-### 3. 下载并解压到固定目录
+### 2. 克隆并运行安装脚本
 
-建议安装到 `~/Applications/iguanatex_bridge`。以下两种方式任选一种，均不需要手工解压。
-
-#### 方式 A：从私有仓库命令行下载
-
-先安装 GitHub CLI。以下命令使用 [GitHub CLI 官方 APT 源](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian)；官方文档说明 Ubuntu 源中的旧版 2.45 / 2.46 存在 GitHub API 兼容问题，因此这里配置官方源。已经从官方源安装了新版 `gh` 时可跳过此段。
+在终端整段执行：
 
 ```bash
-(
-set -e
-sudo apt update
-sudo apt install curl ca-certificates
-bridge_keyring="$(mktemp)"
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o "$bridge_keyring"
-sudo install -d -m 755 /etc/apt/keyrings /etc/apt/sources.list.d
-sudo install -m 644 "$bridge_keyring" /etc/apt/keyrings/githubcli-archive-keyring.gpg
-printf '%s\n' "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-sudo apt update
-sudo apt install gh
-)
-```
-
-用普通用户登录一次，按终端提示完成授权，账号需要有权访问 `Swk6666/Iguanatex_bridge`。已登录正确账号时可跳过。参见 [GitHub CLI 登录说明](https://cli.github.com/manual/gh_auth_login)。
-
-```bash
-gh auth login --hostname github.com --git-protocol https --web
-```
-
-登录成功后，整段复制执行，自动下载本版 ZIP 和校验文件，校验成功后解压：
-
-```bash
-(
-set -e
-if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/iguanatex_bridge" ]; then
-    echo '已有安装目录，请按文档中的升级流程操作。' >&2
-    exit 1
-fi
-bridge_download_dir="$(mktemp -d)"
-gh release download v0.3.2 --repo Swk6666/Iguanatex_bridge \
-    --pattern 'IguanaTex_Bridge_WPS_v0.3.2.zip*' --dir "$bridge_download_dir"
-cd "$bridge_download_dir"
-sha256sum -c IguanaTex_Bridge_WPS_v0.3.2.zip.sha256
-mkdir -p "$HOME/Applications"
-unzip -q IguanaTex_Bridge_WPS_v0.3.2.zip -d "$HOME/Applications"
-)
-```
-
-这里使用 [gh release download](https://cli.github.com/manual/gh_release_download) 下载指定版本的发布附件；私有附件需通过上述登录访问。下载暂存在系统临时目录，解压后的程序保存在 `~/Applications/iguanatex_bridge`。
-
-#### 方式 B：已有安装包，只需命令行解压
-
-跳过 GitHub CLI 安装及登录，把下面的 `/安装包所在目录/` 换成 ZIP 和校验文件实际所在的目录，再整段执行：
-
-```bash
-(
-set -e
-cd "/安装包所在目录/"
-if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/iguanatex_bridge" ]; then
-    echo '已有安装目录，请按文档中的升级流程操作。' >&2
-    exit 1
-fi
-sha256sum -c IguanaTex_Bridge_WPS_v0.3.2.zip.sha256
-mkdir -p "$HOME/Applications"
-unzip -q IguanaTex_Bridge_WPS_v0.3.2.zip -d "$HOME/Applications"
-)
-```
-
-两种方式的校验结果都应为 `OK`（中文环境也可能显示“成功”）。括号和 `set -e` 会让这组命令在出错时停止，校验失败不会继续解压。已有旧版时请使用下方升级流程。
-
-### 4. 运行安装脚本
-
-使用你日常登录和运行 WPS 的普通用户执行。这里**不要加 `sudo`**，否则会注册到错误用户的目录。
-
-```bash
+mkdir -p "$HOME/Applications" &&
+git clone https://github.com/Swk6666/Iguanatex_bridge.git "$HOME/Applications/iguanatex_bridge" &&
 cd "$HOME/Applications/iguanatex_bridge" &&
-bash install_wps_linux_mac.sh
+bash install.sh
 ```
 
-脚本会：
+已有 Git 克隆时，在它所在的目录直接运行 `bash install.sh`，不需要再次克隆，也不需要移到 `~/Applications/`。如果目标目录已有旧 ZIP 安装，先按“升级与迁移”备份它，或把 Git 克隆放到另一个固定目录，随后在新目录安装。
 
-1. 在此目录创建 `.venv` 并安装 Python 依赖。
-2. 启动本地服务，默认地址为 `http://127.0.0.1:17863`。
-3. 合并当前用户的 WPS 加载项配置，修改前备份旧配置。
-4. 配置用户登录后自动启动，优先使用 systemd 用户服务；不可用时使用桌面自动启动。
+**不要运行 `sudo bash install.sh`**：WPS 插件属于当前桌面用户。脚本会拒绝 root 执行，仅在补齐系统包时调用 `sudo`。安装缺少的 TeX Live 包可能需要较长时间。
 
-成功时终端显示“已安装 IguanaTex Bridge 0.3.2”，以及配置路径和本地服务地址。请等待完成后再关闭终端。
+脚本自动完成：
 
-### 5. 重启 WPS
+1. 检查现有 Python 3.10+ / 虚拟环境；需要时通过 APT 安装 `python3` 和 `python3-venv`。
+2. 补齐 `texlive-xetex`、`texlive-latex-extra`、`texlive-fonts-recommended`、`texlive-lang-chinese`；已有系统包会跳过。
+3. 检查 XeLaTeX、中文宏包和 `standalone` 文档类，创建或复用当前目录的 `.venv`，安装 Python 依赖。
+4. 启动本地服务，并合并当前用户的 WPS 加载项配置；修改前备份旧配置。
+5. 配置登录后自动启动，优先使用 systemd 用户服务，不可用时使用桌面自动启动。
 
-保存正在编辑的文稿，完全退出 WPS，再打开 **WPS 演示**。顶部应出现 **IguanaTex** 功能区，包含新建公式、编辑选中公式、检查与同步源码、环境与帮助。
+安装过程中任何一步失败都会停止；解决错误后可重新执行同一命令。成功时显示“已安装 IguanaTex Bridge 0.3.3”以及本地服务地址。
 
-首次安装完成。安装目录要保留，后台服务会从此处读取程序；不要在安装后把它当临时解压文件删除。
+### 3. 重启 WPS
+
+保存正在编辑的文稿，完全退出 WPS，再打开 **WPS 演示**。顶部应出现 **IguanaTex** 功能区。
+
+克隆目录就是安装目录，后台服务会从此处读取程序，请保留。移动目录后，在新位置重新运行 `bash install.sh`。
+
+## 安装选项
+
+默认命令面向 Ubuntu / Debian 的 APT 环境。自行安装了完整 Python 和 TeX Live、不想使用 APT 时：
+
+```bash
+bash install.sh --skip-system-deps
+```
+
+该选项仍会检查 Python 和 TeX，安装项目的 Python 依赖并注册插件。自备 TeX 的路径必须能被后台服务找到。macOS 仍需事先准备 Python 和 MacTeX；其 WPS 实机安装尚未验证。
+
+其他选项可组合使用：
+
+```bash
+bash install.sh --help
+bash install.sh --port 17864
+bash install.sh --addons-dir "/实际的/jsaddons/目录"
+bash install.sh --no-autostart
+```
+
+`--no-autostart` 只取消本次配置自动启动的步骤，仍会启动服务；不会删除此前已有的自动启动配置。旧入口 `install_wps_linux_mac.sh` 转发到 `install.sh`，仍可使用。
+
+## 备用：从 ZIP 安装
+
+ZIP 用于不使用 Git 的电脑或复制安装包。登录 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) 下载 `IguanaTex_Bridge_WPS_v0.3.3.zip` 和同名 `.zip.sha256`。本仓库及附件保持私有访问。
+
+已有 GitHub CLI 并登录的用户，也可在一个空目录下载附件：
+
+```bash
+gh release download v0.3.3 --repo Swk6666/Iguanatex_bridge --pattern 'IguanaTex_Bridge_WPS_v0.3.3.zip*'
+```
+
+在 ZIP 和校验文件所在目录运行以下命令。只在目标安装目录尚不存在时使用；已有旧版时按升级流程操作。若没有 `unzip`，先运行 `sudo apt install unzip`。
+
+```bash
+(
+set -e
+if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/iguanatex_bridge" ]; then
+    echo '已有安装目录，请按文档中的升级流程操作。' >&2
+    exit 1
+fi
+sha256sum -c IguanaTex_Bridge_WPS_v0.3.3.zip.sha256
+mkdir -p "$HOME/Applications"
+unzip -q IguanaTex_Bridge_WPS_v0.3.3.zip -d "$HOME/Applications"
+cd "$HOME/Applications/iguanatex_bridge"
+bash install.sh
+)
+```
+
+校验失败会停止。解压后使用同一个 `install.sh`，不需要手动安装 Python 和 TeX 依赖。
 
 ## 安装验收
 
@@ -167,6 +140,20 @@ bash install_wps_linux_mac.sh
 
 ## 升级与迁移
 
+### 从 Git 克隆安装的用户
+
+保存工作并退出 WPS，然后在原安装目录运行：
+
+```bash
+cd "$HOME/Applications/iguanatex_bridge" &&
+git pull --ff-only &&
+bash install.sh
+```
+
+在其他目录克隆时，将第一行换成实际路径。`git pull --ff-only` 失败时先解决 Git 提示，后续安装不会继续。自己修改过源码时先提交或备份更改；不要强制重置覆盖本地工作。
+
+### 从 ZIP 安装的用户
+
 升级前保存工作并退出 WPS。下面以默认安装目录为例：
 
 1. 保留上一版 ZIP 和校验文件，作为恢复用的安装包。
@@ -181,7 +168,7 @@ systemctl --user stop iguanatex-bridge.service
 
 ```bash
 cd "$HOME/Applications/iguanatex_bridge"
-bash install_wps_linux_mac.sh
+bash install.sh
 ```
 
 5. 重新打开 WPS，检查健康状态和一条测试公式。成功后再自行决定何时删除备份。
@@ -199,7 +186,7 @@ bash install_wps_linux_mac.sh
 先在浏览器打开 [本地服务状态](http://127.0.0.1:17863/health)。正常应显示类似：
 
 ```json
-{"app": "IguanaTexBridge", "version": "0.3.2"}
+{"app": "IguanaTexBridge", "version": "0.3.3"}
 ```
 
 如果能打开：保存后完整退出、重开 WPS，确认使用的是 WPS 演示，并核对 WPS 版本支持 JS 加载项。
@@ -213,7 +200,7 @@ bash install_wps_linux_mac.sh
 可以重新运行安装脚本修复注册。脚本会保留其他插件并备份原配置。企业版策略或不同发行方式可能使用其他目录，可在确认实际目录后指定：
 
 ```bash
-bash install_wps_linux_mac.sh --addons-dir "/实际的/jsaddons/目录"
+bash install.sh --addons-dir "/实际的/jsaddons/目录"
 ```
 
 服务正常而工具栏仍不出现时，需要检查 WPS 的加载项能力和策略；不要用其他机器的整个 WPS 配置覆盖本机配置。
@@ -259,7 +246,7 @@ command -v python3
 sudo apt install python3-venv
 ```
 
-确认脚本使用 Python 3.10+。如处于 Conda 或另一个虚拟环境，请先退出该环境再检查；不要把另一台电脑的 `.venv` 拷贝过来使用。新机器应从 ZIP 安装，由脚本创建自己的环境。
+确认脚本使用 Python 3.10+。如处于 Conda 或另一个虚拟环境，请先退出该环境再检查；不要把另一台电脑的 `.venv` 拷贝过来使用。新机器应重新克隆或解压，由 `install.sh` 创建自己的环境。
 
 ### Python 依赖下载失败
 
@@ -270,7 +257,7 @@ sudo apt install python3-venv
 可以选择另一个可用端口并重新注册：
 
 ```bash
-bash install_wps_linux_mac.sh --port 17864
+bash install.sh --port 17864
 ```
 
 然后重启 WPS。后续健康检查地址和排错命令中的端口也改为 `17864`。
@@ -281,7 +268,7 @@ bash install_wps_linux_mac.sh --port 17864
 
 ```bash
 cd "$HOME/Applications/iguanatex_bridge"
-.venv/bin/python install_wps.py --uninstall
+bash install.sh --uninstall
 ```
 
 这会移除本插件的注册和自动启动配置，项目文件及 PPTX 文稿保留。桌面自动启动降级模式的既有进程会在注销后退出；确认卸载后，可自行删除安装目录。
@@ -290,7 +277,7 @@ cd "$HOME/Applications/iguanatex_bridge"
 
 | 内容 | 默认位置 |
 | --- | --- |
-| 程序和虚拟环境 | 你解压的 `iguanatex_bridge/` 及其中 `.venv/` |
+| 程序和虚拟环境 | 你克隆或解压的 `iguanatex_bridge/` 及其中 `.venv/` |
 | WPS 注册 | `~/.local/share/Kingsoft/wps/jsaddons/publish.xml` |
 | 注册文件备份 | 同目录 `publish.xml.iguanatex-backup-*` |
 | systemd 用户服务 | `~/.config/systemd/user/iguanatex-bridge.service` |
@@ -298,4 +285,4 @@ cd "$HOME/Applications/iguanatex_bridge"
 | 非 systemd 启动日志 | `~/.local/state/iguanatex-bridge/service.log` |
 | 本地服务 | `http://127.0.0.1:17863`，只监听本机 |
 
-这份文档描述安装包的行为。当前这台 Ubuntu 已完成实机验证；另一台机器需要按上述验收步骤确认，尤其是 WPS 版本与加载项能力。
+这份文档描述 Git 源码及版本安装包的安装行为。当前这台 Ubuntu 已完成实机验证；另一台机器需要按上述验收步骤确认，尤其是 WPS 版本与加载项能力。

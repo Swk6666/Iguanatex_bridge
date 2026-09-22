@@ -2,7 +2,7 @@
 
 在 WPS 演示工具栏中编辑 LaTeX 公式，支持 IguanaTex Shape 组合、SVG 矢量输出和字号调整。源码随 PPTX 保存，使用 IguanaTex 原生标签格式。
 
-当前版本 **0.3.2**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
+当前版本 **0.3.3**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
 
 [下载最新安装包](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) · [Ubuntu 完整安装流程](docs/INSTALL_UBUNTU.md)
 
@@ -18,36 +18,20 @@
 
 ## 在另一台 Ubuntu 快速安装
 
-准备支持 **JS 加载项**的 WPS 演示、Python 3.10+，以及本项目的 ZIP 安装包。当前已实测 WPS 365 教育版 12.8.2.21176；其他版本的加载项能力需确认。
+准备支持 **JS 加载项**的 WPS 演示，以及能访问本私有仓库的 GitHub 账号。当前已实测 WPS 365 教育版 12.8.2.21176；其他版本的加载项能力需确认。
 
-首次安装依赖：
-
-```bash
-sudo apt update
-sudo apt install python3 python3-venv unzip texlive-xetex texlive-latex-extra texlive-fonts-recommended texlive-lang-chinese
-```
-
-下载、解压和安装都可以用命令行完成。从私有仓库直接下载的完整命令见 [命令行下载步骤](docs/INSTALL_UBUNTU.md#3-下载并解压到固定目录)，首次需要登录有权访问仓库的 GitHub 账号。
-
-**已有 ZIP 和同名 `.zip.sha256` 文件时**，把下面的 `/安装包所在目录/` 换成实际路径，整段复制执行，即可校验、解压到 `~/Applications/` 并安装。使用日常运行 WPS 的普通用户，**不要加 `sudo`**：
+**克隆后运行一个安装脚本即可：**
 
 ```bash
-(
-set -e
-cd "/安装包所在目录/"
-if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/iguanatex_bridge" ]; then
-    echo '已有安装目录，请按文档中的升级流程操作。' >&2
-    exit 1
-fi
-sha256sum -c IguanaTex_Bridge_WPS_v0.3.2.zip.sha256
-mkdir -p "$HOME/Applications"
-unzip -q IguanaTex_Bridge_WPS_v0.3.2.zip -d "$HOME/Applications"
-cd "$HOME/Applications/iguanatex_bridge"
-bash install_wps_linux_mac.sh
-)
+mkdir -p "$HOME/Applications" &&
+git clone https://github.com/Swk6666/Iguanatex_bridge.git "$HOME/Applications/iguanatex_bridge" &&
+cd "$HOME/Applications/iguanatex_bridge" &&
+bash install.sh
 ```
 
-命令遇到下载包损坏或目录已存在时会停止，不会继续安装；已有版本请看 [升级与迁移](docs/INSTALL_UBUNTU.md#升级与迁移)。
+已有本项目的 Git 克隆时，直接在该目录执行 `bash install.sh`。安装位置不限于 `~/Applications/`，无需再下载 ZIP、解压或搬动目录。若电脑没有 Git，先运行 `sudo apt update && sudo apt install -y git`；私有仓库的首次身份验证见 [完整安装说明](docs/INSTALL_UBUNTU.md)。
+
+脚本会检查并补齐 Ubuntu 的 Python / venv、XeLaTeX、中文和扩展宏包，然后安装 Python 依赖、注册 WPS 插件并配置后台自动启动。**用普通用户运行，不要用 `sudo bash install.sh`**；只有缺少系统包时脚本才调用 `sudo`，可能需要输入系统密码。TeX Live 首次下载较大，请等待完成。
 
 保存文稿并完全退出、重新打开 WPS 演示，顶部应出现 **IguanaTex**。详细验收及故障处理见 [完整安装说明](docs/INSTALL_UBUNTU.md)。
 
@@ -58,7 +42,7 @@ bash install_wps_linux_mac.sh
 ```text
 app.py / bridge.py / wps_support.py   本地服务、LaTeX 渲染与 PPTX 元数据
 wps_addin/                           WPS 功能区和公式编辑窗口
-install_wps*                         安装、注册和自动启动
+install.sh / install_wps*            一键安装、注册和自动启动
 docs/                               安装说明与使用截图
 examples/                           人工生成的验收 PPTX
 test_*                              自动化测试

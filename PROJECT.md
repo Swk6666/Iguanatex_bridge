@@ -16,14 +16,14 @@
 - [x] IguanaTex Shape 组合直接读取，重新生成 SVG 或 PNG。
 - [x] SVG 字形轮廓和源码保留，保存后继续编辑。
 - [x] 原宽高、保留高度、按字号重设尺寸；字号 4–200 pt。
-- [x] Ubuntu 用户级安装和后台自动启动。
+- [x] Ubuntu 克隆后 `bash install.sh` 一键安装系统依赖、注册插件和后台自动启动。
 - [x] 本地 Git、GitHub 私有仓库、安装手册、变更记录、白名单打包。
 
 ## 待办与验收标准
 
 | 优先级 | 事项 | 完成条件 |
 | --- | --- | --- |
-| 高 | 另一台 Ubuntu 安装验收 | 按文档从 ZIP 安装，工具栏可用，中文/SVG/字号保存并重新读取，登录后自动启动 |
+| 高 | 另一台 Ubuntu 安装验收 | 按文档克隆后运行 `install.sh`，工具栏可用，中文/SVG/字号保存并重新读取，登录后自动启动 |
 | 高 | Windows PowerPoint + IguanaTex 往返 | 示例文件能 Edit LaTeX display、ReGenerate，传回 WPS 后源码和尺寸正确 |
 | 高 | macOS PowerPoint + IguanaTex 往返 | 同上，记录系统、Office、IguanaTex 和 TeX 版本 |
 | 中 | Windows / macOS WPS 安装 | 安装、自启动、工具栏和渲染均在对应实机验证 |

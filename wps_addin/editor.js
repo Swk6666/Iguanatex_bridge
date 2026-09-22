@@ -107,7 +107,7 @@
     }); };
     async function init() {
         if (mode === 'help') {
-            $('help').hidden = false; status('IguanaTex Bridge 0.3.2 · 本地 WPS 加载项');
+            $('help').hidden = false; status('IguanaTex Bridge 0.3.3 · 本地 WPS 加载项');
             var info = await api('doctor'); $('doctor').textContent = JSON.stringify(info, null, 2); return;
         }
         if (mode === 'protect') { $('protect').hidden = false; status('准备检查当前演示文稿中的公式源码。'); return; }
