@@ -15,5 +15,12 @@ license; the MIT license of bridge code does not relicense dependencies.
 - Pillow: HPND license, https://python-pillow.github.io/
 - PyMuPDF / MuPDF: AGPL or commercial license, https://pymupdf.readthedocs.io/
 - TeX distributions, fonts, and macro packages: their respective licenses.
+- Playwright (optional webpage OCR): Apache-2.0, https://playwright.dev/python/
+- cryptography (optional Office HTTPS setup): Apache-2.0 / BSD, https://cryptography.io/
+- PySide6 Essentials / Qt (optional standalone GUI): LGPLv3 / GPLv3 / commercial terms, https://doc.qt.io/qtforpython-6/licenses.html
+- Office.js is loaded from Microsoft's hosted CDN, not bundled. See https://learn.microsoft.com/en-us/office/dev/add-ins/overview/office-add-ins
+
+DeepSeek is a third-party web service. Website automation uses the user's own
+browser session and account, and is not an official DeepSeek integration.
 
 Review dependency licenses before redistributing a bundled commercial product.

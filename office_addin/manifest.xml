@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
+  <Id>462f0768-b34e-45b1-9e1b-f6e2474c71b9</Id>
+  <Version>1.0.0.2</Version>
+  <ProviderName>IguanaTex Bridge</ProviderName>
+  <DefaultLocale>zh-CN</DefaultLocale>
+  <DisplayName DefaultValue="IguanaTex Bridge"/>
+  <Description DefaultValue="LaTeX 公式编辑与 DeepSeek 网页图片识别，适用于 Mac 和 Windows PowerPoint。"/>
+  <IconUrl DefaultValue="https://localhost:17864/office/icon.png"/>
+  <SupportUrl DefaultValue="https://github.com/Swk6666/Iguanatex_bridge"/>
+  <AppDomains><AppDomain>https://localhost:17864</AppDomain></AppDomains>
+  <Hosts><Host Name="Presentation"/></Hosts>
+  <Requirements><Sets DefaultMinVersion="1.1"><Set Name="PowerPointApi" MinVersion="1.1"/></Sets></Requirements>
+  <DefaultSettings><SourceLocation DefaultValue="https://localhost:17864/office/taskpane.html"/></DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+   xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+   xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.1"><bt:Set Name="AddinCommands" MinVersion="1.1"/></bt:Sets>
+    </Requirements>
+    <Hosts>
+      <Host xsi:type="Presentation">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="IgBridge.Tab">
+              <Group id="IgBridge.Formulas">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon"/>
+                  <bt:Image size="32" resid="Icon"/>
+                  <bt:Image size="80" resid="Icon"/>
+                </Icon>
+                <Control xsi:type="Button" id="IgBridge.NewFormula">
+                  <Label resid="New.Label"/>
+                  <Supertip><Title resid="New.Label"/><Description resid="New.Description"/></Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon"/>
+                    <bt:Image size="32" resid="Icon"/>
+                    <bt:Image size="80" resid="Icon"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>IgBridge.Editor</TaskpaneId>
+                    <SourceLocation resid="New.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="IgBridge.EditFormula">
+                  <Label resid="Edit.Label"/>
+                  <Supertip><Title resid="Edit.Label"/><Description resid="Edit.Description"/></Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon"/>
+                    <bt:Image size="32" resid="Icon"/>
+                    <bt:Image size="80" resid="Icon"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>IgBridge.Editor</TaskpaneId>
+                    <SourceLocation resid="Edit.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="IgBridge.OpenEditor">
+                  <Label resid="Editor.Label"/>
+                  <Supertip>
+                    <Title resid="Editor.Label"/>
+                    <Description resid="Editor.Description"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon"/>
+                    <bt:Image size="32" resid="Icon"/>
+                    <bt:Image size="80" resid="Icon"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>IgBridge.Editor</TaskpaneId>
+                    <SourceLocation resid="Editor.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="Tab.Label"/>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images><bt:Image id="Icon" DefaultValue="https://localhost:17864/office/icon.png"/></bt:Images>
+      <bt:Urls>
+        <bt:Url id="New.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=new"/>
+        <bt:Url id="Edit.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=edit"/>
+        <bt:Url id="Editor.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=ocr"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Tab.Label" DefaultValue="IguanaTex Bridge"/>
+        <bt:String id="Group.Label" DefaultValue="LaTeX 公式"/>
+        <bt:String id="New.Label" DefaultValue="新建公式"/>
+        <bt:String id="Edit.Label" DefaultValue="编辑选中公式"/>
+        <bt:String id="Editor.Label" DefaultValue="截图识别"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="New.Description" DefaultValue="新建 LaTeX 公式，预览后插入当前幻灯片；源码与字号可由原 IguanaTeX 继续编辑。"/>
+        <bt:String id="Edit.Description" DefaultValue="读取选中 IguanaTeX / Bridge 公式的源码、引擎和字号，修改后更新原位置。支持图片及单公式 Shape 组合。"/>
+        <bt:String id="Editor.Description" DefaultValue="打开公式编辑面板：放置截图，经 DeepSeek 网页识别为 TeX，预览并插入或更新当前幻灯片中的公式。"/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

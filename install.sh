@@ -5,6 +5,7 @@ cd -- "$(dirname -- "$0")"
 
 bridge_skip_system_deps=0
 bridge_uninstall=0
+bridge_with_ocr=0
 bridge_installer_args=()
 
 bridge_usage() {
@@ -20,6 +21,7 @@ WPS 演示须事先安装，且支持 JS 加载项。克隆目录就是安装位
   --port PORT            本地服务端口（默认 17863）
   --addons-dir DIR       自定义 WPS jsaddons 目录
   --no-autostart         不设置登录后自动启动
+  --with-ocr             安装 DeepSeek 网页识别依赖（另需 Google Chrome）
   --uninstall            仅移除 WPS 注册和自动启动，不安装任何依赖
   -h, --help             显示帮助
 USAGE
@@ -29,6 +31,7 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         -h|--help) bridge_usage; exit 0 ;;
         --skip-system-deps) bridge_skip_system_deps=1; shift ;;
+        --with-ocr) bridge_with_ocr=1; shift ;;
         --uninstall) bridge_uninstall=1; bridge_installer_args+=("$1"); shift ;;
         --no-autostart) bridge_installer_args+=("$1"); shift ;;
         --port|--addons-dir)
@@ -116,7 +119,7 @@ if ! command -v xelatex >/dev/null || ! command -v kpsewhich >/dev/null; then
 fi
 for bridge_tex_file in ctex.sty standalone.cls; do
     if ! kpsewhich "$bridge_tex_file" >/dev/null; then
-        echo "缺少 TeX 文件 $bridge_tex_file；请安装中文和 LaTeX 扩展宏包后重试。" >&2; exit 1
+        echo "缺少 TeX 文件 ${bridge_tex_file}；请安装中文和 LaTeX 扩展宏包后重试。" >&2; exit 1
     fi
 done
 
@@ -130,6 +133,9 @@ if ! "$bridge_python" -m pip --version >/dev/null 2>&1; then
 fi
 echo '安装 Python 依赖……'
 "$bridge_python" -m pip install -r requirements.txt
+if [ "$bridge_with_ocr" -eq 1 ]; then
+    "$bridge_python" -m pip install -r requirements-ocr.txt
+fi
 echo '注册 WPS 插件并配置本地服务……'
 # The conditional expansion also supports macOS's older Bash with nounset.
 "$bridge_python" install_wps.py ${bridge_installer_args[@]+"${bridge_installer_args[@]}"}

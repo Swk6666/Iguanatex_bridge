@@ -1,8 +1,8 @@
 # IguanaTex Bridge · 个人项目
 
-在 WPS 演示工具栏中编辑 LaTeX 公式，支持 IguanaTex Shape 组合、SVG 矢量输出和字号调整。源码随 PPTX 保存，使用 IguanaTex 原生标签格式。
+以自己的独立桌面 GUI 编辑 LaTeX 公式，界面沿用 Ubuntu WPS 版，新增截图拖放／粘贴 → Chrome 中 DeepSeek 网页识别 → TeX 自动回填与预览。不依赖上游 IguanaTeX；保留 macOS / Windows PowerPoint 和 Ubuntu WPS 加载项，支持 SVG / PNG、字号与源码保存。
 
-当前版本 **0.3.3**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
+当前版本 **0.4.0**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
 
 [下载最新安装包](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) · [Ubuntu 完整安装流程](docs/INSTALL_UBUNTU.md)
 
@@ -10,6 +10,9 @@
 
 | 目的 | 文档 |
 | --- | --- |
+| 启动独立桌面 GUI（推荐） | [桌面版使用说明](docs/DESKTOP.md) |
+| 在 Mac / Windows PowerPoint 使用 | [Office 安装说明](docs/INSTALL_OFFICE.md) |
+| 图片、截图自动转为 TeX | [DeepSeek 网页识别](docs/DEEPSEEK.md) |
 | 在另一台 Ubuntu 安装、升级、卸载、排查故障 | [Ubuntu 安装说明](docs/INSTALL_UBUNTU.md) |
 | 日常编辑公式、Shape、SVG、字号与跨平台使用 | [使用手册](README_中文.md) |
 | 维护范围、待办、版本管理与打包 | [项目管理](PROJECT.md) |
@@ -26,10 +29,12 @@
 mkdir -p "$HOME/Applications" &&
 git clone https://github.com/Swk6666/Iguanatex_bridge.git "$HOME/Applications/iguanatex_bridge" &&
 cd "$HOME/Applications/iguanatex_bridge" &&
-bash install.sh
+bash install.sh --with-ocr
 ```
 
 已有本项目的 Git 克隆时，直接在该目录执行 `bash install.sh`。安装位置不限于 `~/Applications/`，无需再下载 ZIP、解压或搬动目录。若电脑没有 Git，先运行 `sudo apt update && sudo apt install -y git`；私有仓库的首次身份验证见 [完整安装说明](docs/INSTALL_UBUNTU.md)。
+
+图片识别还需要 Google Chrome，首次使用时在插件打开的独立浏览器中登录 DeepSeek。
 
 脚本会检查并补齐 Ubuntu 的 Python / venv、XeLaTeX、中文和扩展宏包，然后安装 Python 依赖、注册 WPS 插件并配置后台自动启动。**用普通用户运行，不要用 `sudo bash install.sh`**；只有缺少系统包时脚本才调用 `sudo`，可能需要输入系统密码。TeX Live 首次下载较大，请等待完成。
 
@@ -41,7 +46,12 @@ bash install.sh
 
 ```text
 app.py / bridge.py / wps_support.py   本地服务、LaTeX 渲染与 PPTX 元数据
+desktop.py / desktop_support.py      沿用 WPS 布局的独立桌面 GUI
+start_desktop*                      macOS / Windows / Ubuntu 桌面启动入口
 wps_addin/                           WPS 功能区和公式编辑窗口
+office_addin/                        Mac / Windows PowerPoint 加载项
+ocr.py / shared/                     DeepSeek 后台识别与共享图片输入界面
+setup_office.py / start_office*       Office HTTPS 证书、清单与启动入口
 install.sh / install_wps*            一键安装、注册和自动启动
 docs/                               安装说明与使用截图
 examples/                           人工生成的验收 PPTX
@@ -53,6 +63,6 @@ dist/                               本机生成的安装包，不纳入 Git
 .work/                              本机实验与真实文稿副本，不纳入 Git 或安装包
 ```
 
-Ubuntu WPS 实机已验证工具栏、PNG / SVG、Shape 读取更新、字号调整和保存后读取。Windows / macOS PowerPoint + IguanaTex 实机往返尚未完成，不能视为已经通过三端验收。
+0.4.0 已在本机 macOS 实测桌面截图自动识别、TeX 回填和预览，以及 PowerPoint 加载项插入、更新、保存重开读取。此前版本的 Ubuntu WPS 工具栏、PNG / SVG、Shape 更新已实测。Windows 与本次新增 Ubuntu GUI/OCR 仍需对应设备验收，详见验证记录。
 
 已有 MIT 许可及第三方说明保留，见 [LICENSE](LICENSE) 和 [THIRD_PARTY.md](THIRD_PARTY.md)。

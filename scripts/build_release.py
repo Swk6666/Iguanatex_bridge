@@ -47,7 +47,7 @@ def main():
             # Fixed timestamps and permissions make unchanged inputs reproducible.
             info = zipfile.ZipInfo('iguanatex_bridge/' + name, date_time=(2026, 1, 1, 0, 0, 0))
             info.create_system = 3
-            info.external_attr = (0o100755 if name.endswith('.sh') else 0o100644) << 16
+            info.external_attr = (0o100755 if name.endswith(('.sh', '.command')) else 0o100644) << 16
             info.compress_type = zipfile.ZIP_DEFLATED
             output.writestr(info, (ROOT / name).read_bytes())
     with zipfile.ZipFile(archive) as output:

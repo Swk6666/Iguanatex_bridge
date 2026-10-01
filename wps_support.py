@@ -1,4 +1,4 @@
-"""Local render and metadata API shared by the WPS JavaScript add-in."""
+"""Local render and metadata API shared by WPS and Office JavaScript add-ins."""
 import base64
 import os
 from pathlib import Path
@@ -56,13 +56,14 @@ class WpsBridge:
                 old.unlink(missing_ok=True)
         return dict(source=rendered.source, engine=rendered.engine, tags=tags, alt=alt,
                     path=str(path.resolve()), output=output, png=base64.b64encode(png).decode(),
+                    svg=path.read_text(encoding='utf-8') if output == 'svg' else None,
                     width=rendered.width_pt * size / 10, height=rendered.height_pt * size / 10)
 
     @staticmethod
     def metadata(req):
         tags = {str(k).upper(): str(v) for k, v in req.get('tags', {}).items()}
         alt = str(req.get('alt', ''))
-        backup = decode_meta(alt)
+        backup = decode_meta(alt) or decode_meta(tags.get('IGUANABRIDGEMETA', ''))
         if tags.get('LATEXADDIN'):
             source = tags['LATEXADDIN']
             engine = ID_ENGINES.get(tags.get('LATEXENGINEID', '2'), 'unsupported')

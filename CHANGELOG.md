@@ -1,5 +1,18 @@
 # 更新记录
 
+## 0.4.0 · 2026-10-02
+
+- 新增独立桌面 GUI，沿用 Ubuntu WPS 的布局、绿色配色、编译参数和公式示例，源码框上方增加可收起的截图输入。
+- 截图选择 / 拖放 / 粘贴后自动识别、回填和预览；支持草稿恢复、复制透明图片、导出及重新打开 TeX / SVG / PNG / 单公式 PPTX。
+- 新增 Mac / Windows PowerPoint Office.js 加载项，SVG / PNG 插入、源码回读、字号和更新尺寸设置。
+- 新增 PowerPoint 顶部 **IguanaTex Bridge** 功能区，提供“新建公式”“编辑选中公式”“截图识别”三个入口。此前单按钮清单已在 Mac 实测打开编辑面板；三个入口的最新清单通过校验，实机交互仍待验收。
+- 编辑器读取 IguanaTeX 原生源码、引擎与字号；新增 PowerPointApi 1.8 下单公式 Shape 组合识别、选中字形提升到整条公式，以及组合变化检查。更新输出 SVG / PNG；混合排版或多公式组合拒绝整体替换。相关自动化测试通过，组合编辑及上游 ReGenerate 后再次回读仍待实机验收。
+- 新增 localhost HTTPS、用户证书及清单生成、平台启动脚本和安装说明。
+- WPS / Office / 独立编辑器共用图片输入：选择、拖放、粘贴，DeepSeek 网页后台识别、登录等待、取消和 TeX 回填。
+- 浏览器使用独立 profile，后台任务串行，可配置网页选择器；没有 API Key 或私有接口依赖。
+- 增加图片、后台任务、HTTPS、Office 插入失败恢复测试；修复 macOS Bash 中文变量边界及安装测试的临时路径处理。
+- 已在本机 Mac 验证真实 DeepSeek 自动上传与回填、GUI 预览及 PowerPoint 粘贴，以及 Office 加载项的 SVG 插入 / 更新 / 保存重开。修复实际网页的图片 alt 附件名称、透明加载动画及代码块反斜杠保留问题。Windows 和新增 Ubuntu 入口仍需实机验收，见 VALIDATION.md。
+
 ## 0.3.3 · 2026-09-22
 
 - 新增统一入口 `install.sh`，克隆后即可安装；自动补齐 Ubuntu 系统依赖、创建 Python 环境并注册 WPS 和后台服务。

@@ -18,7 +18,7 @@ class InstallEntryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.base = Path(self.temp.name)
+        self.base = Path(self.temp.name).resolve()  # macOS /var -> /private/var
         self.project = self.base / '中文 checkout with spaces'
         self.project.mkdir()
         self.bin = self.base / 'bin'
@@ -122,6 +122,14 @@ elif name in ('python', 'python3'):
         self.assertFalse(any(c[0] in ('sudo', 'dpkg-query') for c in calls))
         self.assertEqual(calls[-1][1], ['install_wps.py', '--port', '17864',
                                       '--addons-dir', addons, '--no-autostart'])
+
+    def test_optional_ocr_installs_before_registration(self):
+        result = self.run_install('--with-ocr')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls()
+        ocr = next(i for i, c in enumerate(calls) if c[1] == ['-m', 'pip', 'install', '-r', 'requirements-ocr.txt'])
+        register = next(i for i, c in enumerate(calls) if c[1][0] == 'install_wps.py')
+        self.assertLess(ocr, register)
 
     def test_uninstall_skips_apt_pip_and_tex(self):
         result = self.run_install('--uninstall', BRIDGE_TEST_TEX_EXIT='1', BRIDGE_TEST_PIP_EXIT='23')

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IguanaTex 公式编辑器</title><link rel="stylesheet" href="style.css"></head>
+<title>IguanaTex 公式编辑器</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/ocr.css"></head>
 <body>
 <header><div class="mark">∑</div><div><h1>IguanaTex <span>Bridge</span></h1><p>在 WPS 中编写，随 PPTX 跨平台编辑</p></div><span class="local">本机编译</span><button id="closeButton" type="button">关闭</button></header>
 <main>
@@ -9,6 +9,7 @@
   <div class="row"><label>编译引擎 <select id="engine"><option value="xelatex">XeLaTeX · 支持中文</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label><label>输出 <select id="output"><option value="svg">SVG 矢量 · 放大清晰</option><option value="png">PNG 透明图片</option></select></label><label id="sizeLabel">字号 <input id="pointSize" aria-label="字号（pt）" type="number" min="4" max="200" step="0.5" value="24">pt</label><span id="target"></span></div>
   <div class="row" id="sizeModeRow" hidden><label>更新尺寸 <select id="sizeMode"><option value="frame">保留原宽高 · 适合现有排版</option><option value="height">保留高度 · 宽度随公式变化</option><option value="font">按字号重设尺寸</option></select></label></div>
   <p class="note" id="sizeHint">字号范围 4–200 pt；使用 IguanaTex 的 10 pt 模板缩放规则。</p>
+  <div id="ocrPanel"></div>
   <label class="source-label" for="source">LaTeX 源码 <span>支持公式片段或完整文档</span></label>
   <textarea id="source" spellcheck="false" aria-label="LaTeX 源码"></textarea>
   <div class="templates"><span>插入示例</span><button data-template="sum">求和</button><button data-template="matrix">矩阵</button><button data-template="aligned">多行公式</button><button data-template="chinese">中文标注</button></div>
@@ -27,4 +28,4 @@
 </section>
 <section id="protect" hidden><h2>检查与同步源码</h2><p>以 IguanaTex 原生标签为准更新备份；原生标签丢失时尝试从替代文字恢复。完成后请保存 PPTX。</p><button id="protectButton" class="primary">检查当前演示文稿</button><pre id="protectResult"></pre></section>
 <details id="errorDetails" hidden><summary>详细信息</summary><pre id="errorText"></pre></details>
-</main><script src="adapter.js"></script><script src="editor.js"></script></body></html>
+</main><script src="/shared/ocr.js"></script><script src="adapter.js"></script><script src="editor.js"></script></body></html>

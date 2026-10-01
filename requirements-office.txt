@@ -1,0 +1,2 @@
+-r requirements-ocr.txt
+cryptography>=44,<49

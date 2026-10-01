@@ -1,0 +1,2 @@
+-r requirements-ocr.txt
+PySide6-Essentials>=6.8,<7

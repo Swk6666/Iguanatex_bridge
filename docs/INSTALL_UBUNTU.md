@@ -1,6 +1,6 @@
 # Ubuntu 安装与维护
 
-当前版本：**0.3.3**。推荐克隆私有仓库，然后运行 `bash install.sh`；同一脚本也能在解压后的安装包中运行。
+当前工作区版本：**0.4.0**（远程发布后才可下载此版本的 Release）。推荐克隆私有仓库，然后运行 `bash install.sh`；同一脚本也能在解压后的安装包中运行。
 
 ## 安装前准备
 
@@ -9,7 +9,9 @@
 - 首次安装需要联网访问 GitHub、Ubuntu 软件源和 Python 包源；Python / venv 和 TeX Live 可由脚本自动安装。Python 最低为 3.10，Ubuntu 软件源仍提供更旧 Python 时需要先升级系统或自行准备受支持的 Python。
 - 私有仓库需要有访问权限的 GitHub 账号。已经克隆或拿到 ZIP 后，安装脚本本身不需要 GitHub 登录。
 
-安装完成后公式在本机编译，日常不需要 Codex、PowerPoint、Node.js 或手动开终端。Ubuntu 端使用本插件；Windows / Mac 的 PowerPoint 端按需使用上游 IguanaTex。
+安装完成后公式在本机编译，日常不需要 Codex、PowerPoint、Node.js 或手动开终端。Ubuntu 端使用 WPS 插件；Windows / Mac 的 PowerPoint 端可使用[新增 Office 加载项](INSTALL_OFFICE.md)或上游 IguanaTex。
+
+需要图片转 TeX 时使用 `bash install.sh --with-ocr`，并安装 Google Chrome。首次在编辑器点击“打开 / 登录 DeepSeek”，流程见[图片识别说明](DEEPSEEK.md)。仅图片识别需要上传所选图片；公式渲染仍在本机进行。
 
 ## 推荐：克隆后一键安装
 
@@ -55,7 +57,7 @@ bash install.sh
 4. 启动本地服务，并合并当前用户的 WPS 加载项配置；修改前备份旧配置。
 5. 配置登录后自动启动，优先使用 systemd 用户服务，不可用时使用桌面自动启动。
 
-安装过程中任何一步失败都会停止；解决错误后可重新执行同一命令。成功时显示“已安装 IguanaTex Bridge 0.3.3”以及本地服务地址。
+安装过程中任何一步失败都会停止；解决错误后可重新执行同一命令。成功时显示“已安装 IguanaTex Bridge 0.4.0”以及本地服务地址。
 
 ### 3. 重启 WPS
 
@@ -86,12 +88,12 @@ bash install.sh --no-autostart
 
 ## 备用：从 ZIP 安装
 
-ZIP 用于不使用 Git 的电脑或复制安装包。登录 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) 下载 `IguanaTex_Bridge_WPS_v0.3.3.zip` 和同名 `.zip.sha256`。本仓库及附件保持私有访问。
+ZIP 用于不使用 Git 的电脑或复制安装包。登录 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) 下载 `IguanaTex_Bridge_WPS_v0.4.0.zip` 和同名 `.zip.sha256`。本仓库及附件保持私有访问。
 
 已有 GitHub CLI 并登录的用户，也可在一个空目录下载附件：
 
 ```bash
-gh release download v0.3.3 --repo Swk6666/Iguanatex_bridge --pattern 'IguanaTex_Bridge_WPS_v0.3.3.zip*'
+gh release download v0.4.0 --repo Swk6666/Iguanatex_bridge --pattern 'IguanaTex_Bridge_WPS_v0.4.0.zip*'
 ```
 
 在 ZIP 和校验文件所在目录运行以下命令。只在目标安装目录尚不存在时使用；已有旧版时按升级流程操作。若没有 `unzip`，先运行 `sudo apt install unzip`。
@@ -103,9 +105,9 @@ if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/igua
     echo '已有安装目录，请按文档中的升级流程操作。' >&2
     exit 1
 fi
-sha256sum -c IguanaTex_Bridge_WPS_v0.3.3.zip.sha256
+sha256sum -c IguanaTex_Bridge_WPS_v0.4.0.zip.sha256
 mkdir -p "$HOME/Applications"
-unzip -q IguanaTex_Bridge_WPS_v0.3.3.zip -d "$HOME/Applications"
+unzip -q IguanaTex_Bridge_WPS_v0.4.0.zip -d "$HOME/Applications"
 cd "$HOME/Applications/iguanatex_bridge"
 bash install.sh
 )
@@ -186,7 +188,7 @@ bash install.sh
 先在浏览器打开 [本地服务状态](http://127.0.0.1:17863/health)。正常应显示类似：
 
 ```json
-{"app": "IguanaTexBridge", "version": "0.3.3"}
+{"app": "IguanaTexBridge", "version": "0.4.0"}
 ```
 
 如果能打开：保存后完整退出、重开 WPS，确认使用的是 WPS 演示，并核对 WPS 版本支持 JS 加载项。

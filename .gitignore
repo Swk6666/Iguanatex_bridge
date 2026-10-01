@@ -8,3 +8,4 @@ dist/
 *.log
 .DS_Store
 /HKEY_CURRENT_USER*
+deepseek_selectors.local.json

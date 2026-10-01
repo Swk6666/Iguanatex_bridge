@@ -1,10 +1,12 @@
-# IguanaTex Bridge 0.3.3 · WPS 公式插件
+# IguanaTex Bridge 0.4.0 · 桌面公式编辑器与 PowerPoint / WPS 加载项
+
+推荐：[独立桌面 GUI](docs/DESKTOP.md)，界面沿用 Ubuntu 版，新增截图自动识别入口。另有 [macOS / Windows PowerPoint 安装](docs/INSTALL_OFFICE.md) · [DeepSeek 图片转 TeX](docs/DEEPSEEK.md)。本项目不依赖上游 IguanaTeX；下文原有 WPS 工作流和可选兼容工作流仍适用。
 
 在 Ubuntu 的 **WPS 演示顶部 IguanaTex 功能区**中直接新建和编辑 LaTeX 公式。完整源码随 PPTX 保存，使用 IguanaTex 的原生标签格式，供 Windows / macOS 的 PowerPoint + IguanaTex 继续编辑。
 
-**本版已在 Ubuntu + WPS 12.8.2.21176 实测工具栏打开、新建、编辑、保存与重新读取，包含中文公式。Windows / macOS 的 PowerPoint 实机往返尚未验证。**
+**原有功能已在 Ubuntu + WPS 12.8.2.21176 实测；0.4.0 已在 Mac PowerPoint 16.113.3 实测自己的 Office 加载项和桌面识别流程。Windows 与新增 Ubuntu GUI / OCR 仍待实机验证。**
 
-## 已在当前电脑安装
+## 此前 Ubuntu 电脑的安装状态
 
 本项目所在目录已注册到 WPS，并配置当前用户的后台服务。WPS 顶部已有 **IguanaTex** 标签。日常无需手动打开终端或导入、导出文稿。
 
@@ -55,7 +57,7 @@ bash install.sh
 
 ## Windows / Mac 与 IguanaTex 互通
 
-Windows / macOS **PowerPoint 用户使用上游 IguanaTex**，不需要安装 WPS 插件：
+Windows / macOS 推荐使用自己的桌面 GUI 或 Office 加载项；如果已有上游 IguanaTex，也可以选择以下互通方式：
 
 1. 按 [IguanaTex 官方说明](https://github.com/Jonathan-LeRoux/IguanaTex) 安装并确认它能独立生成公式。
 2. 打开 WPS 保存的 `.pptx`，选中公式图片。
@@ -65,7 +67,7 @@ Windows / macOS **PowerPoint 用户使用上游 IguanaTex**，不需要安装 WP
 
 适配字段包括 `LATEXADDIN`、`LATEXENGINEID`、`IGUANATEXSIZE`、`BITMAPVECTOR`、`OUTPUTTYPE`、`OUTPUTDPI`、`ORIGINALWIDTH`、`ORIGINALHEIGHT` 等。使用完整文档源码，不写入另一台机器的临时目录配置。
 
-源码同时写入原生标签、替代文字和 PNG / SVG 文件元数据。本机 WPS 保存后均已验证保留。插件可从替代文字恢复标签；独立编辑器还支持从 PNG 恢复（尚不读取 SVG 文件元数据备份）。若全部源码信息被删除，单凭普通图片无法恢复原始 LaTeX。
+源码同时写入原生标签、替代文字和 PNG / SVG 文件元数据。本机 WPS 保存后均已验证保留。插件可从替代文字恢复标签；独立编辑器还支持从 PNG 恢复（尚不读取 SVG 文件元数据备份）。若全部源码信息被删除，可用新增 DeepSeek 图片识别重新转写公式；它不能保证恢复与原稿完全相同的源码。
 
 ### Windows / Mac 也使用 WPS 时
 
@@ -129,18 +131,21 @@ Windows：`.venv\Scripts\python.exe install_wps.py --uninstall`。卸载后重�
 
 ## 验证与边界
 
-- 21 项 Python 测试、17 项 JavaScript 接口测试和 4 项编辑器交互测试覆盖渲染、字号缩放与恢复、标签优先级、安装配置合并、HTTP 访问限制、组合识别、目标冲突检查与替换失败回滚。
+- 56 项 Python 测试和 51 项 JavaScript 测试覆盖渲染、字号、源码兼容、安装与本地服务、GUI 支持模块、图片识别、Office / WPS 组合识别、目标冲突检查与替换失败回滚；详细范围见 [VALIDATION.md](VALIDATION.md)。
 - Ubuntu 实机验证：工具栏打开编辑器、透明 PNG 插入、读取选中公式、中文修改、WPS 保存后的原生 Tags / 替代文字 / PNG 三层源码保留。
 - 新建默认 SVG；Shape 更新默认 SVG，旧 PNG 更新默认 PNG。SVG 是矢量图形；PNG 为 300 DPI 透明图片。两者均不是 WPS 原生数学公式。
 - WPS 若未返回 SVG 图形类型，会取消替换并保留原公式；可手动选择 PNG。不会静默降为位图。
 - `.ppt`、Word 公式、MathType/OLE、普通截图、带签名或宏的文件不在独立编辑器支持范围内。
 - 不自动保存或覆盖文稿；请按正常 WPS 操作保存。
-- 尚未完成 Windows / macOS 的 PowerPoint + IguanaTex 实机往返。请先用 `examples/wps_roundtrip_test.pptx` 做一次识别和 ReGenerate 测试。
+- macOS 上游 IguanaTeX 已实测读取本插件生成公式的源码、引擎和字号；ReGenerate 后返回 Bridge / WPS 再编辑、最新三个功能区入口及 Office Shape 组合更新仍待实机验证。Windows 往返也尚未验收。可用 `examples/wps_roundtrip_test.pptx` 做测试。
 
 ```bash
 .venv/bin/python -m unittest -v
 node test_wps_adapter.js
 node test_wps_editor.js
+node test_office_adapter.js
+node test_office_taskpane.js
+node test_ocr_ui.js
 ```
 
 实现依据：[WPS 加载项开发说明](https://open.wps.cn/documents/app-integration-dev/wps365/client/wpsoffice/wps-integration-mode/wps-addin-development/wps-addin-development-instructions)、[WPS AddPicture](https://open.wps.cn/documents/app-integration-dev/wps365/client/wpsoffice/jsapi/wpp/Shapes/member/AddPicture)、[WPS Tags.Add](https://open.wps.cn/documents/app-integration-dev/wps365/client/wpsoffice/jsapi/wpp/Tags/member/Add)、[IguanaTex 标签读写源码](https://github.com/Jonathan-LeRoux/IguanaTex/blob/master/LatexForm.frm)。
