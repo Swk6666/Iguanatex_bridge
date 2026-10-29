@@ -1,6 +1,6 @@
 # Ubuntu 安装与维护
 
-当前版本：**0.4.1**。推荐克隆私有仓库，然后运行 `bash install.sh`；同一脚本也能在解压后的安装包中运行。
+当前版本：**0.4.2**。推荐克隆私有仓库，然后运行 `bash install.sh`；同一脚本也能在解压后的安装包中运行。
 
 ## 安装前准备
 
@@ -57,7 +57,7 @@ bash install.sh
 4. 启动本地服务，并合并当前用户的 WPS 加载项配置；修改前备份旧配置。
 5. 配置登录后自动启动，优先使用 systemd 用户服务，不可用时使用桌面自动启动。
 
-安装过程中任何一步失败都会停止；解决错误后可重新执行同一命令。成功时显示“已安装 IguanaTex Bridge 0.4.1”以及本地服务地址。
+安装过程中任何一步失败都会停止；解决错误后可重新执行同一命令。成功时显示“已安装 IguanaTex Bridge 0.4.2”以及本地服务地址。
 
 ### 3. 重启 WPS
 
@@ -88,12 +88,12 @@ bash install.sh --no-autostart
 
 ## 备用：从 ZIP 安装
 
-ZIP 用于不使用 Git 的电脑或复制安装包。登录 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) 下载 `IguanaTex_Bridge_WPS_v0.4.1.zip` 和同名 `.zip.sha256`。本仓库及附件保持私有访问。
+ZIP 用于不使用 Git 的电脑或复制安装包。登录 [项目 Releases](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) 下载 `IguanaTex_Bridge_WPS_v0.4.2.zip` 和同名 `.zip.sha256`。本仓库及附件保持私有访问。
 
 已有 GitHub CLI 并登录的用户，也可在一个空目录下载附件：
 
 ```bash
-gh release download v0.4.1 --repo Swk6666/Iguanatex_bridge --pattern 'IguanaTex_Bridge_WPS_v0.4.1.zip*'
+gh release download v0.4.2 --repo Swk6666/Iguanatex_bridge --pattern 'IguanaTex_Bridge_WPS_v0.4.2.zip*'
 ```
 
 在 ZIP 和校验文件所在目录运行以下命令。只在目标安装目录尚不存在时使用；已有旧版时按升级流程操作。若没有 `unzip`，先运行 `sudo apt install unzip`。
@@ -105,9 +105,9 @@ if [ -e "$HOME/Applications/iguanatex_bridge" ] || [ -L "$HOME/Applications/igua
     echo '已有安装目录，请按文档中的升级流程操作。' >&2
     exit 1
 fi
-sha256sum -c IguanaTex_Bridge_WPS_v0.4.1.zip.sha256
+sha256sum -c IguanaTex_Bridge_WPS_v0.4.2.zip.sha256
 mkdir -p "$HOME/Applications"
-unzip -q IguanaTex_Bridge_WPS_v0.4.1.zip -d "$HOME/Applications"
+unzip -q IguanaTex_Bridge_WPS_v0.4.2.zip -d "$HOME/Applications"
 cd "$HOME/Applications/iguanatex_bridge"
 bash install.sh
 )
@@ -136,7 +136,8 @@ bash install.sh
 - 直接从 WPS 工具栏进入，不必启动终端。
 - 公式随 `.pptx` 携带源码和图形；换电脑后，安装插件即可继续编辑。
 - Shape 组合可以直接读源码，更新后为 SVG 图形或 PNG；不保留原生逐字 Shape 结构。
-- 修改字号会自动按字号重设尺寸；想沿用排版时选择“保留原宽高”。
+- 新建公式记住上次手动字号，首次 18 pt；编辑已有公式读取其字号。插入或更新成功后窗口自动关闭。
+- 修改字号会自动按字号重设尺寸；默认保留高度、宽度随内容变化；固定占位才选择“固定原宽高”。
 - 正常在 WPS 中保存文稿。插件不会自动替你保存整个文件。
 - 完整 LaTeX 文档中引用的自定义字体、宏包或外部文件，目标电脑仍须具备对应依赖。
 
@@ -188,7 +189,7 @@ bash install.sh
 先在浏览器打开 [本地服务状态](http://127.0.0.1:17863/health)。正常应显示类似：
 
 ```json
-{"app": "IguanaTexBridge", "version": "0.4.1"}
+{"app": "IguanaTexBridge", "version": "0.4.2"}
 ```
 
 如果能打开：保存后完整退出、重开 WPS，确认使用的是 WPS 演示，并核对 WPS 版本支持 JS 加载项。

@@ -1,1 +1,30 @@
 :root{font-family:"Noto Sans CJK SC","Microsoft YaHei",system-ui,sans-serif;color:#203235;background:#f5f7f7;font-size:14px}*{box-sizing:border-box}body{margin:0}header{display:flex;align-items:center;gap:14px;padding:22px 28px;background:#fff;border-bottom:1px solid #dfe7e7}.mark{font-family:Georgia,serif;background:#176a61;color:white;border-radius:12px;width:46px;height:46px;font-size:36px;text-align:center;line-height:44px}h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.5px}h1 span{font-weight:400;color:#698581}header p{font-size:12px;color:#69807d;margin:4px 0 0}.local{margin-left:auto;font-size:12px;color:#176a61;background:#e9f4ef;border-radius:30px;padding:6px 10px}main{padding:18px 28px}#status{padding:11px 14px;background:#e9f3f0;border:1px solid #d3e5de;border-radius:8px;margin-bottom:16px;white-space:pre-wrap}#status.error{background:#fff0eb;border-color:#e6c8bd;color:#8e3029}.row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:0 0 14px}.row label{display:flex;align-items:center;gap:9px;font-size:13px}select,input,button{font:inherit;border:1px solid #bfcfcd;border-radius:6px;background:white;padding:7px 11px;color:inherit}input{width:74px}#target{color:#708680;font-size:12px;margin-left:auto}.source-label{display:flex;justify-content:space-between;margin-bottom:7px;font-weight:600}.source-label span{font-size:12px;font-weight:400;color:#78908a}textarea{width:100%;height:390px;resize:vertical;border:1px solid #bfcfcd;border-radius:8px;background:white;padding:14px;font:14px/1.6 "DejaVu Sans Mono",Consolas,monospace;color:#243d44;tab-size:2}textarea:focus,button:focus-visible{outline:2px solid #459e91;outline-offset:2px}.templates{display:flex;gap:8px;align-items:center;margin:9px 0 15px;font-size:12px;color:#66817b}.templates button{font-size:12px;padding:4px 10px}button{cursor:pointer}button:hover{background:#edf5f2}button:disabled{opacity:.5;cursor:wait}.primary{background:#176a61;color:white;border-color:#176a61}.primary:hover{background:#11564e}#preview{min-height:95px;border:1px solid #dce6e2;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:18px;background:white;overflow:auto}#previewHint{color:#8a9f99;font-size:13px}#formulaImage{max-width:100%;max-height:110px;object-fit:contain}.actions{display:flex;gap:12px;justify-content:flex-end;margin-top:16px}.actions button{padding:10px 16px}kbd{font:10px monospace;margin-left:10px;opacity:.65}.note{font-size:12px;line-height:1.7;color:#71847f;margin-top:12px}h2{font-size:17px;margin-top:22px}p,li{line-height:1.8}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eaf0ee;padding:14px;border-radius:8px;font-size:12px;line-height:1.6}#errorText{color:#8e3029}[hidden]{display:none!important}
+
+/* Keep the preview and write controls visible, even when OCR or source is long. */
+body.editing{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.editing header{flex:none;padding:10px 20px;gap:10px}
+.editing header .mark{width:38px;height:38px;font-size:30px;line-height:36px}
+.editing header h1{font-size:20px}
+.editing header p{margin:2px 0 0}
+.editing main{flex:1;min-height:0;display:flex;flex-direction:column;padding:10px 20px}
+.editing #status{flex:none;padding:7px 10px;margin-bottom:8px;max-height:70px;overflow:auto}
+.editing #editor{display:flex;flex:1;flex-direction:column;min-height:0}
+.editor-scroll{display:flex;flex:1;flex-direction:column;min-height:0;overflow:auto;padding-right:4px}
+.editor-scroll>.row,.editor-scroll>.note,.editor-scroll>#ocrPanel,.editor-scroll>.source-label,.editor-scroll>.templates{flex:none}
+.editing .row{gap:8px 12px;margin-bottom:6px}
+.editing select,.editing input{padding:5px 8px}
+.editing #sizeHint{margin:0 0 6px;font-size:11px;line-height:1.5}
+.editing #ocrPanel{padding:8px 10px;margin:0 0 8px}
+.editing .source-label{margin-bottom:5px}
+.editing #source{flex:1;min-height:150px;height:auto;resize:none;padding:10px 12px;font-size:13px;line-height:1.5}
+.editing .templates{margin:6px 0;gap:6px}
+.editing #editNote{margin:0 0 6px;font-size:11px;line-height:1.5}
+.editor-footer{flex:none;padding-top:8px;border-top:1px solid #dce6e2}
+.editing #preview{height:112px;min-height:0;padding:12px;overflow:hidden}
+.editing #formulaImage{max-width:none;max-height:none;flex-shrink:0;object-fit:fill}
+.editing #previewSize{margin:4px 0 0;font-size:11px;line-height:1.4}
+.editing .actions{margin-top:6px;gap:10px}
+.editing .actions button{padding:8px 14px}
+.editing #errorDetails{flex:none;max-height:25vh;overflow:auto}
+@media(max-height:650px){.editing header p{display:none}.editing #preview{height:84px}.editing main{padding:8px 14px}.editing header{padding:7px 14px}}
+@media(max-width:700px){.editing .source-label span{display:none}.editing .local{display:none}.editing #closeButton{margin-left:auto}.editing .templates{flex-wrap:wrap}}

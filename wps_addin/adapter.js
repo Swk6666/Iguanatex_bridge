@@ -86,7 +86,6 @@
         return {presentation: presentation, slide: slide, shape: shape,
             slideId: slide.SlideID, shapeId: shape ? shape.Id : null,
             original: shape ? snapshot(shape) : null, sourceData: owner ? owner.data : null,
-            keepFrame: shape ? shape.Type !== 13 : false,
             structure: shape ? JSON.stringify(groupState(shape)) : null};
     }
     function validate(ctx) {
@@ -116,7 +115,9 @@
         }
     }
     function layout(ctx, data) {
-        var old = ctx.shape, mode = ctx.sizeMode || (ctx.keepFrame ? 'frame' : 'height');
+        // A longer formula must be allowed to grow, including SVGs and Shape groups.
+        // Keeping both old dimensions is only an explicit layout choice.
+        var old = ctx.shape, mode = ctx.sizeMode || 'height';
         var height = old && mode !== 'font' ? old.Height : data.height;
         var width = old && mode !== 'font' ? (mode === 'frame' ? old.Width : height * data.width / data.height) : data.width;
         if (!(width > 0 && height > 0 && isFinite(width) && isFinite(height))) throw new Error('公式尺寸无效，请检查字号后重试。');

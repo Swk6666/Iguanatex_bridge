@@ -16,6 +16,7 @@ latex_source.py
 docs/INSTALL_UBUNTU.md
 docs/wps_font_size.png
 docs/wps_full_document.png
+docs/wps_editor_layout.png
 docs/wps_source_sync.png
 docs/wps_toolbar.png
 examples/compatibility_test.pptx

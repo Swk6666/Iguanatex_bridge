@@ -2,31 +2,36 @@
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
-async function fixture(edit=true, source='x', failRender=false) {
-    const nodes={}, renders=[], replacements=[];
-    const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700});
-    get('pointSize').value='24';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='frame';
-    const ctx={shape:edit?{Id:1}:null,keepFrame:true,slide:{SlideIndex:1},sourceData:{tags:{LATEXADDIN:'x'}},
+const layout = require('./wps_addin/adapter.js').layout;
+async function fixture(edit=true, source='x', failRender=false, options={}) {
+    const nodes={}, renders=[], replacements=[], closed=[];
+    const storage = options.storage || new Map();
+    const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700,clientHeight:112});
+    get('pointSize').value='18';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='height';
+    const ctx={shape:edit?{Id:1,Type:28,Width:30,Height:18.4,Left:70,Top:90}:null,slide:{SlideIndex:1},sourceData:{tags:{LATEXADDIN:'x'}},
         presentation:{PageSetup:{SlideWidth:960,SlideHeight:540}}};
-    const sandbox={URLSearchParams,location:{search:edit?'?mode=edit':'?mode=new'},window:{close(){}},
-        document:{getElementById:get,querySelectorAll(){return[];},addEventListener(){}},
-        fetch:async(url,options)=>({ok:!(failRender && url==='/api/wps/render'),json:async()=>{
+    const sandbox={URLSearchParams,location:{search:edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},addEventListener(){},
+        localStorage:{getItem(k){if(options.noStorage)throw Error('storage disabled');return storage.get(k);},setItem(k,v){if(options.noStorage)throw Error('storage disabled');storage.set(k,v);}}},
+        document:{body:{classList:{add(){}}},getElementById:get,querySelectorAll(){return[];},addEventListener(){}},
+        fetch:async(url,request)=>({ok:!(failRender && url==='/api/wps/render'),json:async()=>{
             if(url.startsWith('/api/session'))return {token:'test'};
-            if(url==='/api/wps/metadata')return {found:true,source,engine:'xelatex',tags:{IGUANATEXSIZE:'24'}};
-            const body=JSON.parse(options.body);
+            if(url==='/api/wps/metadata')return {found:true,source,engine:'xelatex',tags:{IGUANATEXSIZE:options.tagSize===undefined?'24':options.tagSize}};
+            const body=JSON.parse(request.body);
             if(url==='/api/latex/source')return {source:body.source.includes('\\documentclass')?body.source:'\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\n\\[\n'+body.source+'\n\\]\n\\end{document}\n'};
             renders.push(body);
             if(failRender)return {error:'LaTeX 编译失败：unknown command'};
-            return {png:'test',width:body.point_size*2,height:body.point_size, tags:{IGUANATEXSIZE:String(body.point_size)}};
+            return {png:'test',width:body.point_size*(options.sentence?13.944:2),height:body.point_size*(options.sentence?1.152:1), tags:{IGUANATEXSIZE:String(body.point_size)}};
         }}),
-        IguanaWps:{context(){return ctx;},validate(){},layout(c,d){return d;},replace(c,d){
-            replacements.push({mode:c.sizeMode,width:d.width,height:d.height});c.shape={Id:2};
+        IguanaWps:{context(){return ctx;},validate(){},layout,replace(c,d){
+            if (options.failWrite) throw Error('写入失败，原公式已保留');
+            const box=layout(c,d);replacements.push({mode:c.sizeMode,width:box.width,height:box.height});
+            c.shape={Id:2,Width:box.width,Height:box.height,Left:box.left,Top:box.top};
         }}};
     vm.runInNewContext(fs.readFileSync('shared/latex.js','utf8'),sandbox);
     sandbox.IguanaLatex=sandbox.window.IguanaLatex;
     vm.runInNewContext(fs.readFileSync('wps_addin/editor.js','utf8'),sandbox);
     await new Promise(resolve=>setImmediate(resolve));
-    return {get,ctx,renders,replacements};
+    return {get,ctx,renders,replacements,storage,closed};
 }
 (async()=>{
     {
@@ -35,6 +40,7 @@ async function fixture(edit=true, source='x', failRender=false) {
         assert.equal(f.get('sizeMode').value,'font');
         await f.get('applyButton').onclick();
         assert.deepEqual(f.replacements[0],{mode:'font',width:72,height:36});
+        assert.equal(f.closed.length,1);
         assert.equal(f.get('sizeLabel').hidden,false);
         await f.get('applyButton').onclick();assert.deepEqual(f.replacements[1],f.replacements[0]);
     }
@@ -48,17 +54,20 @@ async function fixture(edit=true, source='x', failRender=false) {
     {
         const f=await fixture();f.get('pointSize').value='0';f.get('pointSize').oninput();
         await f.get('applyButton').onclick();assert.equal(f.renders.length,0);assert.equal(f.replacements.length,0);
+        assert.equal(f.closed.length,0);
         assert.match(f.get('status').textContent,/4–200/);
     }
     {
         const f=await fixture(false);assert.match(f.get('source').value,/\\documentclass/);assert.match(f.get('source').value,/\\usepackage/);f.get('pointSize').value='22.5';f.get('pointSize').oninput();
         await f.get('applyButton').onclick();assert.equal(f.replacements[0].mode,'font');
         assert.equal(f.get('sizeMode').value,'font');assert.equal(f.get('sizeLabel').hidden,false);assert.equal(f.renders[0].source,f.get('source').value);
+        assert.equal(f.closed.length,1);
     }
     {
         const source='\\documentclass{article}\n\\usepackage{amsmath,xcolor}\n\\newcommand{\\F}{F}\n\\begin{document}\n$\\F$\n\\end{document}\n';
         const f=await fixture(true,source);
         assert.equal(f.get('source').value,source);
+        assert.equal(f.closed.length,0);
         await f.get('previewButton').onclick();
         assert.equal(f.renders[0].source,source);
         assert.equal(f.get('source').value,source);
@@ -72,6 +81,47 @@ async function fixture(edit=true, source='x', failRender=false) {
         assert.match(f.get('source').value,/\\unknowncommand/);
         assert.equal(f.renders[0].source,f.get('source').value);
         assert.equal(f.replacements.length,0);
+        assert.equal(f.closed.length,0);
     }
-    console.log('6 WPS editor interaction tests passed');
+    {
+        const f=await fixture(true,'sentence',false,{sentence:true});
+        assert.equal(f.get('sizeMode').value,'height');
+        await f.get('previewButton').onclick();
+        const image=f.get('formulaImage'), expected=139.44/11.52;
+        assert.ok(Math.abs(parseFloat(image.style.width)/parseFloat(image.style.height)-expected)<1e-10);
+        await f.get('applyButton').onclick();
+        assert.equal(f.replacements[0].height,18.4);assert.ok(f.replacements[0].width>220);
+        f.get('sizeMode').value='frame';f.ctx.shape.Width=30;f.get('sizeMode').onchange();
+        await f.get('previewButton').onclick();
+        assert.match(f.get('previewSize').textContent,/会拉伸文字/);
+        assert.ok(Math.abs(parseFloat(image.style.width)/parseFloat(image.style.height)-30/18.4)<1e-10);
+    }
+    {
+        const f=await fixture(false);assert.equal(Number(f.get('pointSize').value),18);
+        f.get('pointSize').value='22.5';f.get('pointSize').oninput();
+        const reopened=await fixture(false,'x',false,{storage:f.storage});
+        assert.equal(Number(reopened.get('pointSize').value),22.5);
+        const edit=await fixture(true,'x',false,{storage:f.storage,tagSize:'32'});
+        assert.equal(Number(edit.get('pointSize').value),32); // Original metadata takes priority, without replacing the preference.
+        assert.equal(Number((await fixture(false,'x',false,{storage:f.storage})).get('pointSize').value),22.5);
+        const legacy=await fixture(true,'x',false,{storage:f.storage,tagSize:''});
+        assert.equal(Number(legacy.get('pointSize').value),22.5);
+    }
+    {
+        for(const value of ['bad','0','201','Infinity']) {
+            const storage=new Map([['iguanatex-bridge.pointSize',value]]);
+            const f=await fixture(false,'x',false,{storage});assert.equal(Number(f.get('pointSize').value),18);
+            f.get('pointSize').value=value;f.get('pointSize').oninput();
+            assert.equal(storage.get('iguanatex-bridge.pointSize'),value);
+        }
+        const f=await fixture(false,'x',false,{noStorage:true});assert.equal(Number(f.get('pointSize').value),18);
+        f.get('pointSize').value='20';f.get('pointSize').oninput();await f.get('previewButton').onclick();
+        assert.equal(f.renders[0].point_size,20);
+    }
+    {
+        const f=await fixture(true,'x',false,{failWrite:true});
+        await f.get('applyButton').onclick();
+        assert.match(f.get('status').textContent,/写入失败/);assert.equal(f.closed.length,0);
+    }
+    console.log('10 WPS editor interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
