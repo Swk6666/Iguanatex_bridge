@@ -16,12 +16,13 @@ async function fixture(mode='edit') {
             return {original:edit?{id:'original',type:state.type,tags:{}}:null,
                 sourceTags:{LATEXADDIN:state.source,IGUANATEXSIZE:state.size,LATEXENGINEID:'2'}};},
             async apply(target,data,mode){writes.push({target,data,mode});return {original:{id:'new'}};}},
-        fetch:async(url,options)=>({ok:true,json:async()=>{
+        fetch:async(url,options)=>({ok:!(state.failRender && url==='/api/render'),json:async()=>{
             if(url==='/api/session')return {token:'test'};
             const body=JSON.parse(options.body);calls.push([url,body]);
             if(url==='/api/latex/source')return {source:body.source.includes('\\documentclass')?body.source:'\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\n\\[\n'+body.source+'\n\\]\n\\end{document}\n'};
             if(url==='/api/metadata')return {found:state.found,source:body.tags.LATEXADDIN,engine:state.engine,
                 tags:{IGUANATEXSIZE:body.tags.IGUANATEXSIZE,OUTPUTTYPE:state.type==='Group'?'SVG':'PDF'}};
+            if(state.failRender)return {error:'LaTeX 字体缺字'};
             return {png:'preview',tags:{IGUANATEXSIZE:String(body.point_size)}};
         }}),
         Office:{HostType:{PowerPoint:'PowerPoint'},context:{requirements:{isSetSupported(){return true;}}},
@@ -72,6 +73,23 @@ async function test(fn){await fn();count++;}
         f.state.size='32';await f.get('load').onclick();
         assert.ok(f.get('source').value.includes(f.state.source));assert.match(f.get('source').value,/\\documentclass/);assert.equal(Number(f.get('pointSize').value),32);
         assert.equal(f.get('output').value,'svg');
+    });
+    await test(async()=>{
+        const f=await fixture();
+        for(const [id,event,value] of [['source','oninput','x=2'],['engine','onchange','lualatex'],
+                ['output','onchange','png'],['pointSize','oninput','20']]) {
+            await f.get('previewButton').onclick();assert.equal(f.get('formulaImage').hidden,false);
+            f.get(id).value=value;f.get(id)[event]();
+            assert.equal(f.get('formulaImage').hidden,true,id);assert.equal(f.get('formulaImage').src,'');
+            assert.match(f.get('previewHint').textContent,/重新预览/);
+        }
+        await f.get('previewButton').onclick();
+        const count=f.calls.filter(c=>c[0]==='/api/render').length;await f.get('previewButton').onclick();
+        assert.equal(f.calls.filter(c=>c[0]==='/api/render').length,count);
+        f.get('source').value+='broken';f.state.failRender=true;await f.get('apply').onclick();
+        assert.equal(f.writes.length,0);assert.equal(f.get('formulaImage').hidden,true);
+        assert.equal(f.get('formulaImage').src,'');assert.match(f.get('previewHint').textContent,/编译未完成/);
+        f.state.failRender=false;await f.get('previewButton').onclick();assert.equal(f.get('formulaImage').hidden,false);
     });
     console.log(count+' Office taskpane interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

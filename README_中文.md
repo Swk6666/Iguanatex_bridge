@@ -1,4 +1,4 @@
-# IguanaTex Bridge 0.6.0 · 桌面公式编辑器与 PowerPoint / WPS 加载项
+# IguanaTex Bridge 0.6.1 · 桌面公式编辑器与 PowerPoint / WPS 加载项
 
 WPS 工具栏可直接打开完整 LaTeX 编辑器。内置 [DeepSeek API 对话](docs/API_CHAT.md)：输入文字、附加截图、连续追问，完整回答保留在面板中，点击“采用 LaTeX”后再预览写入。首次展开“API 设置”保存 DeepSeek API Key。另有 [独立桌面 GUI](docs/DESKTOP.md) 与 [macOS / Windows PowerPoint 安装](docs/INSTALL_OFFICE.md)。
 

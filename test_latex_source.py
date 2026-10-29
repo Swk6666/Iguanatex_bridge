@@ -1,11 +1,44 @@
 import unittest
 
-from bridge import render
+from bridge import render, xml
 from latex_source import complete_source, replace_formula
 from wps_support import WpsBridge
 
 
 class FullLatexTests(unittest.TestCase):
+    chinese_source = r'''\documentclass{article}
+\usepackage{setspace}
+\usepackage{amsmath}
+\begin{document}
+\begin{spacing}{1.2}
+$\tau_m$ 为实测的 Franka 关节力矩\\
+$W_c$ 为作用在 link0 底部法兰处的六维约束力\\
+$\delta$ 为广义力误差，包括模型参数偏差、状态与力矩测量误差\par
+\end{spacing}
+\end{document}
+'''
+
+    def test_missing_chinese_font_rejected_before_svg_or_png_export(self):
+        # XeLaTeX exits 0 but drops the Chinese; MuPDF then emits &#xffff;.
+        for output in ('svg', 'png'):
+            with self.subTest(output=output), self.assertRaisesRegex(ValueError, '字体缺字') as error:
+                WpsBridge().render({'source': self.chinese_source, 'engine': 'xelatex', 'output': output})
+            self.assertIn(r'\usepackage[fontset=fandol]{ctex}', str(error.exception))
+            self.assertIn('Missing character:', str(error.exception))
+            self.assertNotIn('xmlParseCharRef', str(error.exception))
+
+    def test_corrected_chinese_document_exports_valid_svg_and_tight_crop(self):
+        source = self.chinese_source.replace(r'\begin{document}',
+            '\\usepackage[fontset=fandol]{ctex}\n\\pagestyle{empty}\n\\begin{document}')
+        result = render(source)
+        self.assertEqual(result.source, source)
+        root = xml(result.svg)
+        # Glyph outlines retain the Chinese labels and occupy just three lines.
+        self.assertIn('为', ''.join(root.xpath('//@data-text')))
+        self.assertIn('差', ''.join(root.xpath('//@data-text')))
+        self.assertLess(result.height_pt, 65)
+        self.assertGreater(result.height_pt, 20)
+
     def test_default_document_compiles_with_chinese_and_common_math_packages(self):
         source = complete_source(r'\bm{x}+\mathbb{R}+\text{惯性项}')
         self.assertIn(r'\documentclass[10pt]{article}', source)

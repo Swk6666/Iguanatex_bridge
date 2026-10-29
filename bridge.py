@@ -127,6 +127,18 @@ def render(source, engine='xelatex', dpi=300):
         if result.returncode or not (work / 'formula.pdf').exists():
             output = result.stdout.decode('utf-8', 'replace')[-10000:]
             raise ValueError('LaTeX 编译失败：\n' + output)
+        # XeLaTeX can exit successfully while omitting unsupported characters.
+        # Reject that PDF before producing either a PNG or an invalid SVG.
+        log = work / 'formula.log'
+        diagnostics = (log.read_text(encoding='utf-8', errors='replace') if log.exists()
+                       else result.stdout.decode('utf-8', 'replace'))
+        missing = re.findall(r'^Missing character:[^\r\n]*', diagnostics, re.M)
+        if missing:
+            raise ValueError(
+                'LaTeX 字体缺字：中文请使用 XeLaTeX 并加载 ctex；其他字符请检查字体。\n'
+                r'在 \begin{document} 前加入 \usepackage[fontset=fandol]{ctex}。'
+                '\n仅选择 XeLaTeX 不会自动配置中文字体；已有中文配置时，请检查字体是否支持这些字符。'
+                '\n已停止生成，避免输出丢字的公式。缺字日志（最多 12 条）：\n' + '\n'.join(missing[:12]))
         with fitz.open(work / 'formula.pdf') as doc:
             if len(doc) != 1:
                 raise ValueError('每个公式必须只生成一页 PDF。请使用空页眉页脚并缩短内容。')
@@ -150,6 +162,10 @@ def render(source, engine='xelatex', dpi=300):
             crop = fitz.Rect(*(v * 72/dpi for v in box)) & page.rect
             page.set_cropbox(crop)
             svg = page.get_svg_image(text_as_path=True).encode('utf-8')
+            try:
+                xml(svg)
+            except ET.XMLSyntaxError as e:
+                raise ValueError('SVG 导出失败：生成内容含非法字符，请检查 LaTeX 字体或更换字体后重试。\n' + str(e)) from e
             return Rendered(source, engine, stream.getvalue(), im.width * 72/dpi,
                             im.height * 72/dpi, dpi, svg)
 

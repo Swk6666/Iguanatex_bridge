@@ -32,6 +32,16 @@
         return result;
     }
     function key() { return JSON.stringify([$('source').value, $('engine').value, $('pointSize').value, $('output').value]); }
+    function clearPreview(message) {
+        preview = null; previewKey = '';
+        $('formulaImage').hidden = true; $('formulaImage').src = '';
+        $('previewSize').hidden = true; $('previewSize').textContent = '';
+        $('previewHint').hidden = false; $('previewHint').textContent = message;
+    }
+    function previewChanged() { clearPreview('内容或设置已修改，请重新预览。'); }
+    $('source').oninput = previewChanged;
+    $('engine').onchange = previewChanged;
+    $('output').onchange = previewChanged;
     function sizeMode() { return ctx && ctx.shape ? $('sizeMode').value : 'font'; }
     function sizeHint() {
         var current = sizeMode();
@@ -66,29 +76,32 @@
         if (validSize($('pointSize').value)) {
             try { window.localStorage.setItem(sizePreferenceKey, String(Number($('pointSize').value))); } catch (ignored) {}
         }
-        $('previewSize').hidden = true; sizeHint();
+        previewChanged(); sizeHint();
     };
     $('sizeMode').onchange = function () {
         if (sizeMode() !== 'font') $('pointSize').value = appliedPointSize;
         sizeHint();
         if (preview && previewKey === key()) showPreview(preview);
-        else $('previewSize').hidden = true;
+        else previewChanged();
     };
     window.addEventListener('resize', function () { if (preview && previewKey === key()) showPreview(preview); });
     async function renderFormula() {
-        var pointSize = Number($('pointSize').value);
-        if (!isFinite(pointSize) || pointSize < 4 || pointSize > 200) throw new Error('字号须在 4–200 pt 之间。');
-        await IguanaLatex.prepare($('source'), api);
-        var requestKey = key();
-        if (preview && previewKey === requestKey) { showPreview(preview); return preview; }
-        status('正在使用本机 LaTeX 编译…');
-        var result = await api('wps/render', {source: $('source').value, engine: $('engine').value,
-            point_size: pointSize, output: $('output').value, alt: ctx && ctx.original ? ctx.original.alt : ''});
-        if (key() !== requestKey) throw new Error('源码已变更，请重新预览。');
-        preview = result; previewKey = requestKey;
-        showPreview(result);
-        status('预览已生成，可以写入幻灯片。');
-        return result;
+        try {
+            var pointSize = Number($('pointSize').value);
+            if (!isFinite(pointSize) || pointSize < 4 || pointSize > 200) throw new Error('字号须在 4–200 pt 之间。');
+            await IguanaLatex.prepare($('source'), api);
+            var requestKey = key();
+            if (preview && previewKey === requestKey) { showPreview(preview); return preview; }
+            clearPreview('正在编译当前源码…');
+            status('正在使用本机 LaTeX 编译…');
+            var result = await api('wps/render', {source: $('source').value, engine: $('engine').value,
+                point_size: pointSize, output: $('output').value, alt: ctx && ctx.original ? ctx.original.alt : ''});
+            if (key() !== requestKey) throw new Error('源码已变更，请重新预览。');
+            preview = result; previewKey = requestKey;
+            showPreview(result);
+            status('预览已生成，可以写入幻灯片。');
+            return result;
+        } catch (e) { clearPreview('编译未完成，请修正源码或设置后重新预览。'); throw e; }
     }
     async function run(action) {
         if (busy || chat && chat.isBusy()) return;
@@ -100,7 +113,7 @@
     var chat = window.IguanaChat ? window.IguanaChat.mount($('chatPanel'), {api: api, source: $('source'),
         collapsed: false, docked: true,
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); },
-        canStart: function () { return !busy; }, onSource: function () { preview = null; $('previewSize').hidden = true; }}) : null;
+        canStart: function () { return !busy; }, onSource: previewChanged}) : null;
     $('previewButton').onclick = function () { return run(renderFormula); };
     $('applyButton').onclick = function () { return run(async function () {
         if (!ctx) throw new Error('未连接 WPS，请从 IguanaTex 功能区重新打开。');
@@ -118,6 +131,7 @@
     document.querySelectorAll('[data-template]').forEach(function (button) { button.onclick = function () {
         var field = $('source'), snippet = templates[button.dataset.template];
         field.setRangeText(snippet, field.selectionStart, field.selectionEnd, 'end'); field.focus();
+        previewChanged();
     }; });
     $('protectButton').onclick = function () { run(async function () {
         var items = IguanaWps.formulas(), restored = 0, failed = [];
@@ -134,7 +148,7 @@
     }); };
     async function init() {
         if (mode === 'help') {
-            $('help').hidden = false; status('IguanaTex Bridge 0.6.0 · 本地 WPS 加载项');
+            $('help').hidden = false; status('IguanaTex Bridge 0.6.1 · 本地 WPS 加载项');
             var info = await api('doctor'); $('doctor').textContent = JSON.stringify(info, null, 2); return;
         }
         if (mode === 'protect') { $('protect').hidden = false; status('准备检查当前演示文稿中的公式源码。'); return; }

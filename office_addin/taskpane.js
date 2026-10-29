@@ -29,27 +29,41 @@
     }
     function reset() {
         target = null; preview = null; $('sizeModeLabel').hidden = true; $('sizeMode').value = 'font';
-        $('formulaImage').hidden = true; $('previewHint').hidden = false;
+        clearPreview('点击预览，查看当前源码的编译结果。');
         $('apply').textContent = '插入当前幻灯片';
     }
     function key() { return JSON.stringify([$('source').value, $('engine').value, $('output').value, $('pointSize').value]); }
+    function clearPreview(message) {
+        preview = null; previewKey = '';
+        $('formulaImage').hidden = true; $('formulaImage').src = '';
+        $('previewHint').hidden = false; $('previewHint').textContent = message;
+    }
+    function previewChanged() { clearPreview('内容或设置已修改，请重新预览。'); }
+    $('source').oninput = previewChanged;
+    $('engine').onchange = previewChanged;
+    $('output').onchange = previewChanged;
     async function renderFormula() {
-        await IguanaLatex.prepare($('source'), api);
-        var requestKey = key(), size = Number($('pointSize').value);
-        if (!(size >= 4 && size <= 200)) throw new Error('字号须在 4–200 pt 之间。');
-        if (!preview || previewKey !== requestKey) {
-            status('正在本机编译公式…');
-            preview = await api('render', {source: $('source').value, engine: $('engine').value, output: $('output').value, point_size: size});
-            previewKey = requestKey;
-        }
-        $('formulaImage').src = 'data:image/png;base64,' + preview.png;
-        $('formulaImage').hidden = false; $('previewHint').hidden = true;
-        status('预览已生成，请核对公式后写入。');
-        return preview;
+        try {
+            await IguanaLatex.prepare($('source'), api);
+            var requestKey = key(), size = Number($('pointSize').value);
+            if (!(size >= 4 && size <= 200)) throw new Error('字号须在 4–200 pt 之间。');
+            if (!preview || previewKey !== requestKey) {
+                clearPreview('正在编译当前源码…');
+                status('正在本机编译公式…');
+                var result = await api('render', {source: $('source').value, engine: $('engine').value, output: $('output').value, point_size: size});
+                if (key() !== requestKey) throw new Error('源码已变更，请重新预览。');
+                preview = result;
+                previewKey = requestKey;
+            }
+            $('formulaImage').src = 'data:image/png;base64,' + preview.png;
+            $('formulaImage').hidden = false; $('previewHint').hidden = true;
+            status('预览已生成，请核对公式后写入。');
+            return preview;
+        } catch (e) { clearPreview('编译未完成，请修正源码或设置后重新预览。'); throw e; }
     }
     var chat = IguanaChat.mount($('chatPanel'), {api: api, source: $('source'), canStart: function () { return !busy; },
         collapsed: false, docked: true,
-        prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); }, onSource: function () { preview = null; }});
+        prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); }, onSource: previewChanged});
     async function newFormula() {
         mode = 'new'; reset(); await IguanaLatex.load($('source'), 'E=mc^{2}', api);
         IguanaLatex.selectBody($('source'));
@@ -72,8 +86,11 @@
     }
     $('new').onclick = function () { return run(newFormula); };
     $('load').onclick = function () { return run(loadSelection); };
-    $('pointSize').oninput = function () { $('sizeMode').value = 'font'; };
-    $('sizeMode').onchange = function () { if ($('sizeMode').value !== 'font') $('pointSize').value = appliedSize; };
+    $('pointSize').oninput = function () { $('sizeMode').value = 'font'; previewChanged(); };
+    $('sizeMode').onchange = function () {
+        if ($('sizeMode').value !== 'font') $('pointSize').value = appliedSize;
+        if (previewKey !== key()) previewChanged();
+    };
     $('previewButton').onclick = function () { return run(renderFormula); };
     $('apply').onclick = function () { return run(async function () {
         if (!ready) throw new Error('尚未连接 PowerPoint。');

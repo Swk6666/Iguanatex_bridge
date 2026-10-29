@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const layout = require('./wps_addin/adapter.js').layout;
 async function fixture(edit=true, source='x', failRender=false, options={}) {
-    const nodes={}, renders=[], replacements=[], closed=[];
+    const nodes={}, renders=[], replacements=[], closed=[], state={failRender};
     const storage = options.storage || new Map();
     const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700,clientHeight:112});
     get('pointSize').value='18';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='font';
@@ -13,13 +13,13 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     const sandbox={URLSearchParams,location:{search:edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},addEventListener(){},
         localStorage:{getItem(k){if(options.noStorage)throw Error('storage disabled');return storage.get(k);},setItem(k,v){if(options.noStorage)throw Error('storage disabled');storage.set(k,v);}}},
         document:{body:{classList:{add(){}}},getElementById:get,querySelectorAll(){return[];},addEventListener(){}},
-        fetch:async(url,request)=>({ok:!(failRender && url==='/api/wps/render'),json:async()=>{
+        fetch:async(url,request)=>({ok:!(state.failRender && url==='/api/wps/render'),json:async()=>{
             if(url.startsWith('/api/session'))return {token:'test'};
             if(url==='/api/wps/metadata')return {found:true,source,engine:'xelatex',tags:{IGUANATEXSIZE:options.tagSize===undefined?'24':options.tagSize}};
             const body=JSON.parse(request.body);
             if(url==='/api/latex/source')return {source:body.source.includes('\\documentclass')?body.source:'\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\n\\[\n'+body.source+'\n\\]\n\\end{document}\n'};
             renders.push(body);
-            if(failRender)return {error:'LaTeX 编译失败：unknown command'};
+            if(state.failRender)return {error:'LaTeX 编译失败：unknown command'};
             return {png:'test',width:body.point_size*(options.sentence?13.944:2),height:body.point_size*(options.sentence?1.152:1), tags:{IGUANATEXSIZE:String(body.point_size)}};
         }}),
         IguanaWps:{context(){return ctx;},validate(){},layout,replace(c,d){
@@ -31,7 +31,7 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     sandbox.IguanaLatex=sandbox.window.IguanaLatex;
     vm.runInNewContext(fs.readFileSync('wps_addin/editor.js','utf8'),sandbox);
     await new Promise(resolve=>setImmediate(resolve));
-    return {get,ctx,renders,replacements,storage,closed};
+    return {get,ctx,renders,replacements,storage,closed,state};
 }
 (async()=>{
     {
@@ -123,5 +123,29 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
         await f.get('applyButton').onclick();
         assert.match(f.get('status').textContent,/写入失败/);assert.equal(f.closed.length,0);
     }
-    console.log('10 WPS editor interaction tests passed');
+    {
+        const f=await fixture();
+        for(const [id,event,value] of [['source','oninput','x=2'],['engine','onchange','lualatex'],
+                ['output','onchange','png'],['pointSize','oninput','20']]) {
+            await f.get('previewButton').onclick();
+            assert.equal(f.get('formulaImage').hidden,false);
+            f.get(id).value=value;f.get(id)[event]();
+            assert.equal(f.get('formulaImage').hidden,true,id);
+            assert.equal(f.get('formulaImage').src,'');
+            assert.equal(f.get('previewSize').hidden,true);
+            assert.match(f.get('previewHint').textContent,/重新预览/);
+        }
+        await f.get('previewButton').onclick();
+        const count=f.renders.length;await f.get('previewButton').onclick();
+        assert.equal(f.renders.length,count); // Unchanged valid result remains cacheable.
+        f.get('source').value+='broken';f.state.failRender=true;
+        await f.get('applyButton').onclick(); // Also clears stale preview if no input event fired.
+        assert.equal(f.get('formulaImage').hidden,true);assert.equal(f.get('formulaImage').src,'');
+        assert.equal(f.get('previewSize').hidden,true);assert.equal(f.get('previewHint').hidden,false);
+        assert.match(f.get('previewHint').textContent,/编译未完成/);
+        assert.equal(f.replacements.length,0);assert.equal(f.closed.length,0);
+        f.state.failRender=false;await f.get('previewButton').onclick();
+        assert.equal(f.get('formulaImage').hidden,false);assert.equal(f.get('errorDetails').hidden,true);
+    }
+    console.log('11 WPS editor interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
