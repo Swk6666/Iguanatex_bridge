@@ -1,12 +1,12 @@
 # macOS / Windows PowerPoint 安装
 
-0.4.0 新增自己的 Office.js 加载项，与 Ubuntu WPS 共用本地渲染器和 DeepSeek 图片识别，不依赖上游 IguanaTeX。日常截图识别也可直接使用[独立桌面 GUI](DESKTOP.md)。此加载项面向 **桌面 PowerPoint**，不包含 Word / Excel。清单允许 PowerPointApi 1.1 宿主加载页面，实际插入与更新在运行时检查 PowerPointApi 1.5；版本不足时提示更新或使用独立编辑器。
+0.4.0 新增自己的 Office.js 加载项，与 Ubuntu WPS 共用本地渲染器和 DeepSeek 对话，不依赖上游 IguanaTeX。0.5.0 起面板默认使用 API，详见 [DeepSeek API 对话](API_CHAT.md)。日常截图识别也可直接使用[独立桌面 GUI](DESKTOP.md)。此加载项面向 **桌面 PowerPoint**，不包含 Word / Excel。清单允许 PowerPointApi 1.1 宿主加载页面，实际插入与更新在运行时检查 PowerPointApi 1.5；版本不足时提示更新或使用独立编辑器。
 
 ## 准备环境
 
 - Python 3.10 或以上。
 - macOS：MacTeX（推荐完整安装，包含中文宏包）；Windows：TeX Live 或 MiKTeX，安装 `amsmath`、`amssymb`、`bm`，需要中文时安装 `ctex`、Fandol 字体并选 XeLaTeX。
-- Google Chrome，用于独立 DeepSeek 登录窗口。也可选 Edge / Playwright Chromium，见下文。
+- AI 对话需要 DeepSeek API Key；无需 Chrome 或网页登录。
 - Office 加载项需要访问微软的 Office.js CDN；图片识别需要访问 DeepSeek。
 
 公式仍在本机编译。Office 加载项通过本地 HTTPS 连接服务。独立编辑器与 WPS 使用 HTTP 17863；Office 使用 HTTPS 17864，两个监听器只绑定 `127.0.0.1`，共享任务与登录浏览器。
@@ -59,7 +59,7 @@ start_office_windows.bat
 ## 使用
 
 1. 新建或打开一页幻灯片，点击顶部 **IguanaTex Bridge → 新建公式**。
-2. 输入 TeX，或按照[DeepSeek 图片识别说明](DEEPSEEK.md)选择、拖入、粘贴公式截图并识别。
+2. 输入 TeX，或按照 [DeepSeek API 对话](API_CHAT.md)配置密钥，输入文字并附图；收到回答后点击“采用 LaTeX”。
 3. 选择引擎、SVG / PNG、字号，点击“预览”。
 4. 核对后点击“插入当前幻灯片”，再保存 PPTX。
 5. 以后选中 IguanaTeX / Bridge 公式，点击功能区或面板中的“编辑选中公式”，核对已读取源码后修改，点击“更新已读取的公式”。面板中的“新建公式”可清除编辑目标并开始另一条公式。
@@ -89,13 +89,13 @@ Windows 将生成的新清单重新复制到共享目录。浏览器配置示例
 - 端口被占用：关闭旧服务，或更换 HTTP / HTTPS 端口；不要同时启动两份使用同一个 DeepSeek 状态目录的服务。
 - LaTeX 不存在：点击“环境检查”。macOS 自动查找 `/Library/TeX/texbin`；Windows 将 TeX 的可执行文件目录加入 PATH，再重启服务。
 - SVG 插入失败：选 PNG；加载项会先检测 ImageCoercion 1.2 支持情况。
-- DeepSeek 登录、上传或识别失败：查看独立浏览器和[识别说明](DEEPSEEK.md)。
+- DeepSeek API 调用失败：在面板检查密钥、模型与余额，见 [API 对话](API_CHAT.md)。
 
 ## 卸载与证书更新
 
 退出服务，macOS 删除 `~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/IguanaTexBridge.xml`；Windows 从加载项列表移除插件，并在信任中心删除本项目的目录条目。其他加载项不受影响。
 
-本地证书有效期一年。更新时，先在钥匙串 / 当前用户证书管理器中确认并移除旧的 **IguanaTex Bridge localhost** 证书，备份后移走状态目录的 `office` 子目录，再运行首次安装命令重新生成与信任证书。删除整个状态目录会同时清除独立 DeepSeek 浏览器登录；不影响日常 Chrome 配置。
+本地证书有效期一年。更新时，先在钥匙串 / 当前用户证书管理器中确认并移除旧的 **IguanaTex Bridge localhost** 证书，备份后移走状态目录的 `office` 子目录，再运行首次安装命令重新生成与信任证书。删除整个状态目录会同时清除 DeepSeek API 密钥与独立浏览器登录；不影响日常 Chrome 配置。
 
 ## 验证状态
 

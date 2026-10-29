@@ -17,7 +17,7 @@
         return result;
     }
     async function run(fn) {
-        if (busy || ocr.isBusy()) return;
+        if (busy || chat.isBusy()) return;
         busy = true;
         document.querySelectorAll('button,textarea,select,input').forEach(function (e) { e.disabled = true; });
         try { await fn(); } catch (e) { status(e.message, true); }
@@ -47,7 +47,7 @@
         status('预览已生成，请核对公式后写入。');
         return preview;
     }
-    var ocr = IguanaOcr.mount($('ocrPanel'), {api: api, source: $('source'), canStart: function () { return !busy; },
+    var chat = IguanaChat.mount($('chatPanel'), {api: api, source: $('source'), canStart: function () { return !busy; },
         collapsed: mode !== 'ocr',
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); }, onSource: function () { preview = null; }});
     async function newFormula() {

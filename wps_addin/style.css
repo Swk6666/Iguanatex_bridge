@@ -10,11 +10,11 @@ body.editing{height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .editing #status{flex:none;padding:7px 10px;margin-bottom:8px;max-height:70px;overflow:auto}
 .editing #editor{display:flex;flex:1;flex-direction:column;min-height:0}
 .editor-scroll{display:flex;flex:1;flex-direction:column;min-height:0;overflow:auto;padding-right:4px}
-.editor-scroll>.row,.editor-scroll>.note,.editor-scroll>#ocrPanel,.editor-scroll>.source-label,.editor-scroll>.templates{flex:none}
+.editor-scroll>.row,.editor-scroll>.note,.editor-scroll>#chatPanel,.editor-scroll>.source-label,.editor-scroll>.templates{flex:none}
 .editing .row{gap:8px 12px;margin-bottom:6px}
 .editing select,.editing input{padding:5px 8px}
 .editing #sizeHint{margin:0 0 6px;font-size:11px;line-height:1.5}
-.editing #ocrPanel{padding:8px 10px;margin:0 0 8px}
+.editing #chatPanel{padding:8px 10px;margin:0 0 8px}
 .editing .source-label{margin-bottom:5px}
 .editing #source{flex:1;min-height:150px;height:auto;resize:none;padding:10px 12px;font-size:13px;line-height:1.5}
 .editing .templates{margin:6px 0;gap:6px}

@@ -91,13 +91,13 @@
         return result;
     }
     async function run(action) {
-        if (busy || ocr && ocr.isBusy()) return;
+        if (busy || chat && chat.isBusy()) return;
         busy = true; $('errorDetails').hidden = true;
         document.querySelectorAll('button, textarea, select, input').forEach(function (e) { e.disabled = true; });
         try { await action(); } catch (e) { failure(e); }
         finally { busy = false; document.querySelectorAll('button, textarea, select, input').forEach(function (e) { e.disabled = false; }); }
     }
-    var ocr = window.IguanaOcr ? window.IguanaOcr.mount($('ocrPanel'), {api: api, source: $('source'),
+    var chat = window.IguanaChat ? window.IguanaChat.mount($('chatPanel'), {api: api, source: $('source'),
         collapsed: true,
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); },
         canStart: function () { return !busy; }, onSource: function () { preview = null; $('previewSize').hidden = true; }}) : null;
@@ -134,7 +134,7 @@
     }); };
     async function init() {
         if (mode === 'help') {
-            $('help').hidden = false; status('IguanaTex Bridge 0.4.2 · 本地 WPS 加载项');
+            $('help').hidden = false; status('IguanaTex Bridge 0.5.0 · 本地 WPS 加载项');
             var info = await api('doctor'); $('doctor').textContent = JSON.stringify(info, null, 2); return;
         }
         if (mode === 'protect') { $('protect').hidden = false; status('准备检查当前演示文稿中的公式源码。'); return; }

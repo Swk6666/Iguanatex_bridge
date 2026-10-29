@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IguanaTex Bridge · PowerPoint</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/ocr.css">
+<title>IguanaTex Bridge · PowerPoint</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/chat.css">
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head>
 <body><header><span class="mark">∑</span><div><h1>IguanaTex Bridge</h1><p>PowerPoint · Mac / Windows</p></div></header>
 <main><div id="status" role="status" aria-live="polite">正在连接 PowerPoint…</div>
 <div class="row"><button id="new">新建公式</button><button id="load">编辑选中公式</button></div>
-<div id="ocrPanel"></div>
+<div id="chatPanel"></div>
 <label for="source">完整 LaTeX 源码 · 宏包、命令与正文均可编辑</label><textarea id="source" spellcheck="false">E=mc^{2}</textarea>
 <div class="row"><label>引擎<select id="engine"><option value="xelatex">XeLaTeX · 中文</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label>
 <label>输出<select id="output"><option value="svg">SVG 矢量</option><option value="png">PNG 透明图片</option></select></label>
@@ -15,4 +15,4 @@
 <div class="row"><button id="previewButton">预览</button><button id="apply" class="primary">插入当前幻灯片</button></div>
 <p class="note">公式和 IguanaTex 源码一同保存。更新保留位置与所选宽高规则；旋转、翻转、动画和特效需重新设置。更新后请保存 PPTX。</p>
 <details><summary>环境检查与兼容性</summary><p class="note">图片公式需要 PowerPointApi 1.5；Shape 组合和层叠顺序需要 1.8。可与原 IguanaTeX 互相读取和修改源码、引擎及字号。Shape 更新为 SVG / PNG 后仍可再次编辑；逐字形状样式不保留。含其他对象的外层排版组合需先取消外层组合。</p><button id="doctor">检查本机 LaTeX</button><pre id="diagnostics"></pre><a href="/" target="_blank" rel="noopener">打开独立 PPTX 编辑器</a></details>
-</main><script src="/shared/latex.js"></script><script src="/shared/ocr.js"></script><script src="adapter.js"></script><script src="taskpane.js"></script></body></html>
+</main><script src="/shared/latex.js"></script><script src="/shared/chat.js"></script><script src="adapter.js"></script><script src="taskpane.js"></script></body></html>

@@ -14,18 +14,20 @@ from urllib.parse import urlsplit
 from bridge import Deck, render, public_records, doctor
 from wps_support import WpsBridge
 from ocr import OcrJobs
+from ai_chat import ChatJobs
 from latex_source import complete_source, replace_formula, DEFAULT_FORMULA
 
 
-def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=None):
+def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=None, chat_options=None):
     shared = shared if shared is not None else {}
     owner = not shared
     if owner:
         shared.update(state={'deck': None, 'name': 'formulas.pptx'}, lock=threading.Lock(),
                       token=secrets.token_urlsafe(32), renderer=WpsBridge(cache_dir),
-                      ocr=OcrJobs(**(ocr_options or {})))
+                      ocr=OcrJobs(**(ocr_options or {})), chat=ChatJobs(**(chat_options or {})))
     state, lock, token = shared['state'], shared['lock'], shared['token']
     wps_bridge, ocr = shared['renderer'], shared['ocr']
+    chat = shared['chat']
 
     class Handler(BaseHTTPRequestHandler):
         def reply(self, obj, code=200):
@@ -59,7 +61,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 self.reply({'token': token})
                 return
             if path == '/health':
-                self.reply({'app': 'IguanaTexBridge', 'version': '0.4.2'})
+                self.reply({'app': 'IguanaTexBridge', 'version': '0.5.0'})
                 return
             assets = {'/': ('ui.html', 'text/html; charset=utf-8'),
                       '/wps/': ('wps_addin/index.html', 'text/html; charset=utf-8'),
@@ -73,6 +75,8 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       '/shared/ocr.js': ('shared/ocr.js', 'application/javascript'),
                       '/shared/latex.js': ('shared/latex.js', 'application/javascript'),
                       '/shared/ocr.css': ('shared/ocr.css', 'text/css'),
+                      '/shared/chat.js': ('shared/chat.js', 'application/javascript'),
+                      '/shared/chat.css': ('shared/chat.css', 'text/css'),
                       '/office/': ('office_addin/taskpane.html', 'text/html; charset=utf-8'),
                       '/office/taskpane.html': ('office_addin/taskpane.html', 'text/html; charset=utf-8'),
                       '/office/adapter.js': ('office_addin/adapter.js', 'application/javascript'),
@@ -145,6 +149,16 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 return ocr.get(req.get('id'))
             elif op == '/api/ocr/cancel':
                 return ocr.cancel(req.get('id'))
+            elif op == '/api/chat/config':
+                return chat.configure(req)
+            elif op == '/api/chat/start':
+                return chat.start(req)
+            elif op == '/api/chat/history':
+                return chat.history(req.get('conversation_id'))
+            elif op == '/api/chat/status':
+                return chat.get(req.get('id'))
+            elif op == '/api/chat/cancel':
+                return chat.cancel(req.get('id'))
             elif op == '/api/preview':
                 result = render(req['source'], req.get('engine', 'xelatex'))
                 return {'png': base64.b64encode(result.png).decode(), 'source': result.source}
@@ -180,6 +194,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
             super().server_close()
             if owner:
                 ocr.close()
+                chat.close()
 
     server = Server(('127.0.0.1', port), Handler)
     server.daemon_threads = True
@@ -224,7 +239,7 @@ def main():
         threading.Thread(target=secure.serve_forever, daemon=True).start()
         print(f'PowerPoint 加载项：https://localhost:{secure.server_port}/office/', flush=True)
     url = f'http://127.0.0.1:{server.server_port}/'
-    print('IguanaTex Bridge 0.4.2，按 Ctrl+C 退出。', flush=True)
+    print('IguanaTex Bridge 0.5.0，按 Ctrl+C 退出。', flush=True)
     print('本地界面：' + url, flush=True)
     if not args.no_browser:
         webbrowser.open(url)

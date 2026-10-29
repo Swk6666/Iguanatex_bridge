@@ -1,6 +1,8 @@
-# 公式截图 → DeepSeek 网页 → LaTeX
+# 旧版网页识别（独立 Qt 桌面 GUI）
 
-0.4.0 在独立桌面 GUI、WPS、PowerPoint 和浏览器版 PPTX 编辑器中提供图片识别。推荐使用[桌面 GUI](DESKTOP.md)，截图放入后自动识别和预览；加载项与浏览器编辑器点击识别按钮发送。接入的是 `https://chat.deepseek.com/` 的可见网页，使用 Playwright 驱动专用 Chrome 窗口，不需要 API Key。它不是 DeepSeek 官方提供的稳定集成接口；网页改版、账号能力和登录验证可能影响自动操作。
+从 0.5.0 起，WPS、PowerPoint 加载项与浏览器编辑器默认使用 [DeepSeek API 对话](API_CHAT.md)，不需要网页登录。本文保留独立 Qt 桌面 GUI 与旧接口的网页识别操作。
+
+0.4.0 曾在独立桌面 GUI、WPS、PowerPoint 和浏览器版 PPTX 编辑器中提供网页图片识别。推荐使用[桌面 GUI](DESKTOP.md)，截图放入后自动识别和预览；加载项与浏览器编辑器点击识别按钮发送。接入的是 `https://chat.deepseek.com/` 的可见网页，使用 Playwright 驱动专用 Chrome 窗口，不需要 API Key。它不是 DeepSeek 官方提供的稳定集成接口；网页改版、账号能力和登录验证可能影响自动操作。
 
 ## 安装与使用
 

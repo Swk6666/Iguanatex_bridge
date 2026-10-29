@@ -11,7 +11,7 @@ async function fixture(mode='edit') {
     const state={captureError:null,found:true,type:'Group',source:'Native \\frac{x}{Y}',size:'28',engine:'xelatex'};
     const sandbox={URLSearchParams,location:{search:'?mode='+mode},
         document:{getElementById:get,querySelectorAll(){return Object.values(nodes);}},
-        IguanaOcr:{mount(){return {isBusy(){return false;}};}},
+        IguanaChat:{mount(){return {isBusy(){return false;}};}},
         IguanaOffice:{async capture(edit){calls.push(['capture',edit]);if(state.captureError)throw Error(state.captureError);
             return {original:edit?{id:'original',type:state.type,tags:{}}:null,
                 sourceTags:{LATEXADDIN:state.source,IGUANATEXSIZE:state.size,LATEXENGINEID:'2'}};},

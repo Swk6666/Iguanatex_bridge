@@ -78,3 +78,9 @@ start_desktop.sh
 start_desktop_mac.command
 start_desktop_windows.bat
 test_desktop.py
+ai_chat.py
+shared/chat.js
+shared/chat.css
+docs/API_CHAT.md
+test_ai_chat.py
+test_chat_ui.js

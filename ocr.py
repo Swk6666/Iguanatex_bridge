@@ -152,7 +152,7 @@ class DeepSeekBrowser:
         try:
             from playwright.sync_api import sync_playwright
         except ImportError as e:
-            raise ValueError('尚未安装图片识别依赖，请运行 python -m pip install -r requirements-ocr.txt。') from e
+            raise ValueError('尚未安装网页识别依赖，请在项目目录运行 bash install.sh --with-ocr。') from e
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         env = browser_environment()
         self.playwright = sync_playwright().start()

@@ -9,3 +9,4 @@ dist/
 .DS_Store
 /HKEY_CURRENT_USER*
 deepseek_selectors.local.json
+deepseek-api.json

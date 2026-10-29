@@ -21,7 +21,7 @@ WPS 演示须事先安装，且支持 JS 加载项。克隆目录就是安装位
   --port PORT            本地服务端口（默认 17863）
   --addons-dir DIR       自定义 WPS jsaddons 目录
   --no-autostart         不设置登录后自动启动
-  --with-ocr             安装 DeepSeek 网页识别依赖（另需 Google Chrome）
+  --with-ocr             安装旧版网页识别依赖（另需 Chrome；API 对话无需此项）
   --uninstall            仅移除 WPS 注册和自动启动，不安装任何依赖
   -h, --help             显示帮助
 USAGE

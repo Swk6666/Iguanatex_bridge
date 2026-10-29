@@ -1,6 +1,6 @@
-# IguanaTex Bridge 0.4.2 · 桌面公式编辑器与 PowerPoint / WPS 加载项
+# IguanaTex Bridge 0.5.0 · 桌面公式编辑器与 PowerPoint / WPS 加载项
 
-推荐：[独立桌面 GUI](docs/DESKTOP.md)，界面沿用 Ubuntu 版，新增截图自动识别入口。另有 [macOS / Windows PowerPoint 安装](docs/INSTALL_OFFICE.md) · [DeepSeek 图片转 TeX](docs/DEEPSEEK.md)。本项目不依赖上游 IguanaTeX；下文原有 WPS 工作流和可选兼容工作流仍适用。
+WPS 工具栏可直接打开完整 LaTeX 编辑器。0.5.0 内置 [DeepSeek API 对话](docs/API_CHAT.md)：输入文字、附加截图、连续追问，完整回答保留在面板中，点击“采用 LaTeX”后再预览写入。首次展开“API 设置”保存 DeepSeek API Key。另有 [独立桌面 GUI](docs/DESKTOP.md) 与 [macOS / Windows PowerPoint 安装](docs/INSTALL_OFFICE.md)。
 
 在 Ubuntu 的 **WPS 演示顶部 IguanaTex 功能区**中直接新建和编辑 LaTeX 公式。完整源码随 PPTX 保存，使用 IguanaTex 的原生标签格式，供 Windows / macOS 的 PowerPoint + IguanaTex 继续编辑。
 
