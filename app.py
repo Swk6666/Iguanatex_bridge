@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from bridge import Deck, render, public_records, doctor
 from wps_support import WpsBridge
 from ocr import OcrJobs
+from latex_source import complete_source, replace_formula, DEFAULT_FORMULA
 
 
 def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=None):
@@ -58,7 +59,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 self.reply({'token': token})
                 return
             if path == '/health':
-                self.reply({'app': 'IguanaTexBridge', 'version': '0.4.0'})
+                self.reply({'app': 'IguanaTexBridge', 'version': '0.4.1'})
                 return
             assets = {'/': ('ui.html', 'text/html; charset=utf-8'),
                       '/wps/': ('wps_addin/index.html', 'text/html; charset=utf-8'),
@@ -70,6 +71,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       '/wps/style.css': ('wps_addin/style.css', 'text/css'),
                       '/wps/ribbon.xml': ('wps_addin/ribbon.xml', 'application/xml'),
                       '/shared/ocr.js': ('shared/ocr.js', 'application/javascript'),
+                      '/shared/latex.js': ('shared/latex.js', 'application/javascript'),
                       '/shared/ocr.css': ('shared/ocr.css', 'text/css'),
                       '/office/': ('office_addin/taskpane.html', 'text/html; charset=utf-8'),
                       '/office/taskpane.html': ('office_addin/taskpane.html', 'text/html; charset=utf-8'),
@@ -125,6 +127,12 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 state.update(deck=deck, name=name)
             elif op == '/api/doctor':
                 return doctor()
+            elif op == '/api/latex/source':
+                source = req.get('source', DEFAULT_FORMULA)
+                base = req.get('base')
+                if base is not None and not isinstance(base, str):
+                    raise ValueError('原文必须是字符串。')
+                return {'source': complete_source(source) if base is None else replace_formula(base, source)}
             elif op in ('/api/wps/render', '/api/render'):
                 return wps_bridge.render(req)
             elif op in ('/api/wps/metadata', '/api/metadata'):
@@ -216,7 +224,7 @@ def main():
         threading.Thread(target=secure.serve_forever, daemon=True).start()
         print(f'PowerPoint 加载项：https://localhost:{secure.server_port}/office/', flush=True)
     url = f'http://127.0.0.1:{server.server_port}/'
-    print('IguanaTex Bridge 0.4.0，按 Ctrl+C 退出。', flush=True)
+    print('IguanaTex Bridge 0.4.1，按 Ctrl+C 退出。', flush=True)
     print('本地界面：' + url, flush=True)
     if not args.no_browser:
         webbrowser.open(url)

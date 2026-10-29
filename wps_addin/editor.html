@@ -10,7 +10,7 @@
   <div class="row" id="sizeModeRow" hidden><label>更新尺寸 <select id="sizeMode"><option value="frame">保留原宽高 · 适合现有排版</option><option value="height">保留高度 · 宽度随公式变化</option><option value="font">按字号重设尺寸</option></select></label></div>
   <p class="note" id="sizeHint">字号范围 4–200 pt；使用 IguanaTex 的 10 pt 模板缩放规则。</p>
   <div id="ocrPanel"></div>
-  <label class="source-label" for="source">LaTeX 源码 <span>支持公式片段或完整文档</span></label>
+  <label class="source-label" for="source">完整 LaTeX 源码 <span>完整文档 · 宏包、命令与正文均可编辑</span></label>
   <textarea id="source" spellcheck="false" aria-label="LaTeX 源码"></textarea>
   <div class="templates"><span>插入示例</span><button data-template="sum">求和</button><button data-template="matrix">矩阵</button><button data-template="aligned">多行公式</button><button data-template="chinese">中文标注</button></div>
   <div id="preview"><span id="previewHint">点击“预览”检查排版</span><img id="formulaImage" alt="公式预览" hidden></div>
@@ -28,4 +28,4 @@
 </section>
 <section id="protect" hidden><h2>检查与同步源码</h2><p>以 IguanaTex 原生标签为准更新备份；原生标签丢失时尝试从替代文字恢复。完成后请保存 PPTX。</p><button id="protectButton" class="primary">检查当前演示文稿</button><pre id="protectResult"></pre></section>
 <details id="errorDetails" hidden><summary>详细信息</summary><pre id="errorText"></pre></details>
-</main><script src="/shared/ocr.js"></script><script src="adapter.js"></script><script src="editor.js"></script></body></html>
+</main><script src="/shared/latex.js"></script><script src="/shared/ocr.js"></script><script src="adapter.js"></script><script src="editor.js"></script></body></html>

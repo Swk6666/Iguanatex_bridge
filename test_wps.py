@@ -106,6 +106,8 @@ class WpsIntegrationTests(unittest.TestCase):
             compile_formula.assert_not_called()
 
     def test_assets_and_path_traversal(self):
+        with urllib.request.urlopen(self.base + '/shared/latex.js') as response:
+            self.assertEqual(response.status, 200)
         for asset in ['ribbon.xml', 'main.js', 'adapter.js', 'editor.js', 'style.css']:
             with urllib.request.urlopen(self.base + '/wps/' + asset) as response:
                 self.assertEqual(response.status, 200)
@@ -147,6 +149,17 @@ class WpsIntegrationTests(unittest.TestCase):
             with self.assertRaises(ET.ParseError):
                 register(Path(td))
             self.assertEqual(p.read_text(), '<unfinished')
+
+    def test_full_source_api_matches_compilation_and_preserves_ocr_preamble(self):
+        full = self.request('/api/latex/source', {'source': r'\frac{a}{b}'})['source']
+        rendered = self.request('/api/wps/render', {'source': full})
+        self.assertEqual(rendered['source'], full)
+        self.assertEqual(rendered['tags']['LATEXADDIN'], full)
+        custom = full.replace('\\pagestyle{empty}', '\\newcommand{\\R}{\\mathbb{R}}\n\\pagestyle{empty}')
+        adopted = self.request('/api/latex/source', {'source': r'\R', 'base': custom})['source']
+        self.assertIn(r'\newcommand{\R}', adopted)
+        self.assertNotIn(r'\frac{a}{b}', adopted)
+        self.assertEqual(self.request('/api/latex/source', {'source': custom})['source'], custom)
 
 
 if __name__ == '__main__':

@@ -2,9 +2,11 @@
 
 以自己的独立桌面 GUI 编辑 LaTeX 公式，界面沿用 Ubuntu WPS 版，新增截图拖放／粘贴 → Chrome 中 DeepSeek 网页识别 → TeX 自动回填与预览。不依赖上游 IguanaTeX；保留 macOS / Windows PowerPoint 和 Ubuntu WPS 加载项，支持 SVG / PNG、字号与源码保存。
 
-当前版本 **0.4.0**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
+当前版本 **0.4.1**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
 
 [下载最新安装包](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) · [Ubuntu 完整安装流程](docs/INSTALL_UBUNTU.md)
+
+0.4.1 默认显示并编辑完整 LaTeX 文档，宏包与自定义命令都在编辑区中；预览编译和保存的源码保持一致。详见 [完整文档编辑](README_中文.md#完整-latex-文档编辑)。
 
 ## 从这里开始
 

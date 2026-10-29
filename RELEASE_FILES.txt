@@ -12,8 +12,10 @@ VERSION
 app.py
 assets/blank.pptx
 bridge.py
+latex_source.py
 docs/INSTALL_UBUNTU.md
 docs/wps_font_size.png
+docs/wps_full_document.png
 docs/wps_source_sync.png
 docs/wps_toolbar.png
 examples/compatibility_test.pptx
@@ -28,6 +30,8 @@ scripts/build_release.py
 start_linux_mac.sh
 start_windows.bat
 test_bridge.py
+test_latex_source.py
+test_latex_ui.js
 test_install.py
 test_wps.py
 test_wps_adapter.js
@@ -57,6 +61,7 @@ requirements-office.txt
 setup_office.py
 shared/ocr.css
 shared/ocr.js
+shared/latex.js
 start_office_mac.sh
 start_office_windows.bat
 test_ocr.py

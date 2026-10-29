@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-function fixture(changeSource=false, finalStatus='succeeded') {
+function fixture(changeSource=false, finalStatus='succeeded', prepareSource=null) {
     const nodes={}, calls=[], events={};
     function element(key) {
         if(!nodes[key])nodes[key]={value:'',hidden:false,disabled:false,textContent:'',classList:{add(){}},
@@ -16,7 +16,7 @@ function fixture(changeSource=false, finalStatus='succeeded') {
         setTimeout(fn){fn();}};
     vm.runInNewContext(fs.readFileSync('shared/ocr.js','utf8'),sandbox);
     let canStart=true;
-    const controller=sandbox.IguanaOcr.mount(container,{source,canStart:()=>canStart,api:async(path,data)=>{
+    const controller=sandbox.IguanaOcr.mount(container,{source,prepareSource,canStart:()=>canStart,api:async(path,data)=>{
         calls.push([path,data]);
         if(path==='ocr/status') {
             if(changeSource)source.value='user edit';
@@ -63,6 +63,20 @@ async function test(fn){await fn();count++;}
         const f=fixture();let prevented=false;
         f.events.paste({clipboardData:{files:[{type:'image/png',size:40,name:'pasted.png'}]},preventDefault(){prevented=true;}});
         assert(prevented);await f.click('start');assert.equal(f.source.value,'A=b');
+    });
+    await test(async()=>{
+        const f=fixture(false,'succeeded',async(source,current)=>{
+            assert.equal(source,'A=b');assert.equal(current,'original');return 'complete document containing A=b';
+        });
+        f.choose();await f.click('start');assert.equal(f.source.value,'complete document containing A=b');
+    });
+    await test(async()=>{
+        const f=fixture(false,'succeeded',async()=>{
+            await Promise.resolve();f.source.value='a newer edit';return 'stale document';
+        });
+        f.choose();await f.click('start');assert.equal(f.source.value,'a newer edit');
+        assert.equal(f.element('panel .ocr-result').hidden,false);
+        assert.equal(f.element('panel .ocr-result textarea').value,'A=b');
     });
     console.log(count+' OCR UI interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

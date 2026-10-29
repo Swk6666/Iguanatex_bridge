@@ -1,4 +1,18 @@
-# 验证记录 · 0.4.0
+# 验证记录 · 0.4.1
+
+## 0.4.1 完整文档编辑验证 · 2026-10-29
+
+- 本机原运行 0.3.3；从远程 main 快进到 0.4.0（7efdb07）后实施本次修改，使用 `bash install.sh` 更新本机服务到 0.4.1。
+- Python：64 项通过；JavaScript：60 项通过（WPS 适配器 17、WPS 编辑器 6、Office 适配器 17、Office 面板 6、OCR 界面 9、完整文档界面辅助 5）。
+- 新增检查覆盖：默认完整模板的真实 XeLaTeX 中文与 pdfLaTeX 编译、自定义宏包/命令及 CRLF 原样保留、带数学定界符及 align 的片段不重复包裹、注释中的 documentclass、不完整导言区、OCR 保留宏定义和文档尾注、异步补全期间改动不被覆盖、编译失败后完整代码仍可见。
+- Ubuntu WPS 实机：在专用 `.work/full_document_wps_test.pptx` 中，从工具栏新建完整文档；手工输入 `amsmath,xcolor` 和 `\newcommand{\F}{\color{red}F}`，Ctrl+Enter 预览成功，插入 SVG，保存后独立解析 PPTX，`LATEXADDIN` 与编辑框文本完全相同。
+- 关闭测试文稿并重开，选中公式后通过“编辑选中公式”读回完整导言区、宏定义、正文、XeLaTeX 与 24 pt。截图见 `docs/wps_full_document.png`。用户其他文稿未修改。
+- Qt 桌面窗口（Ubuntu / PySide6 Essentials 6.12.0，offscreen）：实际创建窗口、编译、复制完整 TeX、保存 .tex、模拟 OCR 成功回填并编译通过；预览结果源码与编辑框一致。没有执行真实 DeepSeek 图片上传。
+- 发布包包含 78 个白名单文件，解压后的安装帮助可运行；同一输入重复构建结果一致，包含新增完整文档模块与 WPS 截图。
+- 本次未在 Windows / macOS Office 宿主重跑；对应逻辑测试通过，0.4.0 的实机记录保留在下方，不能替代本次改动的三端宿主验收。
+- 已核对上游 [IguanaTex LatexForm.frm](https://github.com/Jonathan-LeRoux/IguanaTex/blob/master/LatexForm.frm)：编辑器文本直接写入 .tex 并存入 LATEXADDIN；本次按此行为对齐。
+
+## 0.4.0 验证环境
 
 日期：2026-10-02。开发环境：macOS / Python 3.14.4 / PySide6 Essentials 6.11.2 / Node.js / 本机 XeLaTeX。
 

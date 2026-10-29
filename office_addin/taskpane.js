@@ -34,6 +34,7 @@
     }
     function key() { return JSON.stringify([$('source').value, $('engine').value, $('output').value, $('pointSize').value]); }
     async function renderFormula() {
+        await IguanaLatex.prepare($('source'), api);
         var requestKey = key(), size = Number($('pointSize').value);
         if (!(size >= 4 && size <= 200)) throw new Error('字号须在 4–200 pt 之间。');
         if (!preview || previewKey !== requestKey) {
@@ -46,10 +47,13 @@
         status('预览已生成，请核对公式后写入。');
         return preview;
     }
-    var ocr = IguanaOcr.mount($('ocrPanel'), {api: api, source: $('source'), canStart: function () { return !busy; }, onSource: function () { preview = null; }});
-    function newFormula() {
-        mode = 'new'; reset(); $('source').value = 'E=mc^{2}';
-        status('新建公式：输入 TeX 或放置截图，预览后插入当前幻灯片。');
+    var ocr = IguanaOcr.mount($('ocrPanel'), {api: api, source: $('source'), canStart: function () { return !busy; },
+        collapsed: mode !== 'ocr',
+        prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); }, onSource: function () { preview = null; }});
+    async function newFormula() {
+        mode = 'new'; reset(); await IguanaLatex.load($('source'), 'E=mc^{2}', api);
+        IguanaLatex.selectBody($('source'));
+        status('新建公式：编辑完整 LaTeX 文档，预览后插入当前幻灯片。');
     }
     async function loadSelection() {
         mode = 'edit'; reset(); $('apply').textContent = '更新选中公式';
@@ -58,7 +62,8 @@
         var meta = await api('metadata', {tags: tags, alt: tags.IGUANABRIDGEMETA || ''});
         if (!meta.found) throw new Error('选中对象没有公式源码。请选中 IguanaTeX / Bridge 公式，或点击“新建公式”后识别截图。');
         if (!['xelatex', 'pdflatex', 'lualatex'].includes(meta.engine)) throw new Error('此公式使用不支持的编译引擎。');
-        target = selected; preview = null; $('source').value = meta.source; $('engine').value = meta.engine;
+        await IguanaLatex.load($('source'), meta.source, api);
+        target = selected; preview = null; $('engine').value = meta.engine;
         var format = String(meta.tags.OUTPUTTYPE || '').toUpperCase();
         $('output').value = ['SVG', 'PDF', 'EMF'].includes(format) || selected.original.type === 'Group' || meta.tags.BITMAPVECTOR === '1' ? 'svg' : 'png';
         appliedSize = Number(meta.tags.IGUANATEXSIZE) || 24; $('pointSize').value = appliedSize;
@@ -90,6 +95,6 @@
         ready = true;
         if (mode === 'edit') run(loadSelection);
         else if (mode === 'new') run(newFormula);
-        else status('已连接 PowerPoint。放置截图识别后，可预览并插入公式。');
+        else run(newFormula);
     });
 }());

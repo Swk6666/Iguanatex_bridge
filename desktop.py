@@ -11,7 +11,7 @@ import sys
 from PySide6.QtCore import (QBuffer, QByteArray, QIODevice, QMimeData, QObject,
                             QRunnable, QThreadPool, QTimer, Qt, Signal, Slot)
 from PySide6.QtGui import (QAction, QFontDatabase, QImage, QKeySequence, QPixmap,
-                           QShortcut)
+                           QShortcut, QTextCursor)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
                                QFileDialog, QFrame, QHBoxLayout, QLabel,
                                QMainWindow, QMessageBox, QPlainTextEdit,
@@ -22,6 +22,7 @@ from desktop_support import (LocalService, atomic_write, formula_pptx, load_imag
                              read_source, render_formula)
 from ocr import MAX_PIXELS, TERMINAL, prepare_image
 from paths import state_dir
+from latex_source import complete_source, replace_formula, DEFAULT_FORMULA
 
 
 class TaskSignals(QObject):
@@ -146,7 +147,7 @@ class MainWindow(QMainWindow):
         self.ocr_toggle.setText('截图识别 · DeepSeek 网页版')
         self.ocr_toggle.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.ocr_toggle.setArrowType(Qt.ArrowType.DownArrow)
-        self.ocr_toggle.setCheckable(True); self.ocr_toggle.setChecked(True)
+        self.ocr_toggle.setCheckable(True); self.ocr_toggle.setChecked(False)
         b.addWidget(self.ocr_toggle)
         self.ocr_panel = QWidget(); a = QVBoxLayout(self.ocr_panel)
         a.setContentsMargins(0, 0, 0, 0); a.setSpacing(6)
@@ -188,14 +189,21 @@ class MainWindow(QMainWindow):
         self.use_result.hide()
         b.addWidget(self.ocr_panel)
         self.ocr_toggle.toggled.connect(self.toggle_ocr)
-        row = QHBoxLayout(); row.addWidget(QLabel('<b>LaTeX 源码</b>')); row.addStretch()
-        hint = QLabel('支持公式片段或完整文档'); hint.setObjectName('muted'); row.addWidget(hint)
+        self.toggle_ocr(False)
+        row = QHBoxLayout(); row.addWidget(QLabel('<b>完整 LaTeX 源码</b>')); row.addStretch()
+        hint = QLabel('宏包、命令与正文均可编辑'); hint.setObjectName('muted'); row.addWidget(hint)
         b.addLayout(row)
         self.source = QPlainTextEdit()
         self.source.setAccessibleName('LaTeX 源码')
         self.source.setFont(QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont))
-        self.source.setMinimumHeight(170)
-        self.source.setPlaceholderText('识别结果会自动填入这里，也可以直接输入公式…')
+        self.source.setMinimumHeight(260)
+        self.source.setPlaceholderText('输入完整 LaTeX 文档；粘贴公式片段时，编译前会先补全并显示。')
+        initial_source = complete_source(DEFAULT_FORMULA)
+        self.source.setPlainText(initial_source)
+        cursor = self.source.textCursor()
+        cursor.setPosition(initial_source.index(DEFAULT_FORMULA))
+        cursor.setPosition(initial_source.index(DEFAULT_FORMULA) + len(DEFAULT_FORMULA), QTextCursor.MoveMode.KeepAnchor)
+        self.source.setTextCursor(cursor)
         b.addWidget(self.source, 3)
         row = QHBoxLayout()
         label = QLabel('插入示例'); label.setObjectName('muted'); row.addWidget(label)
@@ -329,6 +337,7 @@ class MainWindow(QMainWindow):
                 self.ocr_message.setText(str(error))
 
     def set_image(self, data):
+        self.ocr_toggle.setChecked(True)
         self.image_data = data
         self.drop.show_image(data)
         self.ocr_message.setText('截图已放入。')
@@ -370,9 +379,13 @@ class MainWindow(QMainWindow):
             self.poll.stop(); self.ocr_active = False; self.job_id = None
             if job.get('source'):
                 if self.source.toPlainText() == self.ocr_baseline:
-                    self.source.setPlainText(job['source'])
-                    self.ocr_message.setText('识别完成，TeX 已自动填入。')
-                    self.preview()
+                    try:
+                        self.source.setPlainText(replace_formula(self.ocr_baseline, job['source']))
+                        self.ocr_message.setText('识别完成，公式已填入完整文档，导言区保留。')
+                        self.preview()
+                    except ValueError as error:
+                        self.pending_source = job['source']; self.pending.setPlainText(self.pending_source)
+                        self.pending.show(); self.use_result.show(); self.error(str(error))
                 else:
                     self.pending_source = job['source']
                     self.pending.setPlainText(self.pending_source)
@@ -393,12 +406,17 @@ class MainWindow(QMainWindow):
                         lambda _: self.ocr_message.setText('正在停止本地等待…'), self.ocr_error)
 
     def use_pending(self):
-        self.source.setPlainText(self.pending_source)
+        try:
+            self.source.setPlainText(replace_formula(self.source.toPlainText(), self.pending_source))
+        except ValueError as error:
+            self.error(str(error)); return
         self.pending.hide(); self.use_result.hide()
         self.preview()
 
     def preview(self):
         if self.rendering:
+            return
+        if not self.prepare_source():
             return
         snapshot = self.fingerprint()
         if not snapshot[0].strip():
@@ -420,9 +438,22 @@ class MainWindow(QMainWindow):
             self.rendering = False; self.update_actions(); self.error(message)
         self.submit(lambda: render_formula(*snapshot), ready, failed)
 
+    def prepare_source(self):
+        try:
+            original = self.source.toPlainText()
+            full = complete_source(original)
+            if original != full:
+                self.source.setPlainText(full)
+            return True
+        except ValueError as error:
+            self.error(str(error))
+            return False
+
     def copy_tex(self):
+        if not self.prepare_source():
+            return
         QApplication.clipboard().setText(self.source.toPlainText())
-        self.status.setText('TeX 已复制。')
+        self.status.setText('完整 LaTeX 文档已复制。')
 
     def copy_image(self):
         if self.result is None:
@@ -434,6 +465,8 @@ class MainWindow(QMainWindow):
         self.status.setText('公式图片已复制。到 PowerPoint / WPS 中粘贴；再次编辑可保存 TeX 或导出 PPTX。')
 
     def save_source(self):
+        if not self.prepare_source():
+            return
         path, _ = QFileDialog.getSaveFileName(self, '保存 TeX', 'formula.tex', 'TeX 源码 (*.tex)')
         if path:
             try:
@@ -498,6 +531,8 @@ class MainWindow(QMainWindow):
                 self.auto.setChecked(bool(data.get('auto', True)))
                 self.output.setCurrentIndex(max(0, self.output.findData(data.get('output', 'svg'))))
                 self.status.setText('已恢复上次的 TeX 草稿。')
+                if data['source'].strip():
+                    self.prepare_source()
         except (OSError, ValueError, TypeError):
             pass
 

@@ -20,6 +20,7 @@ import uuid
 import zipfile
 import zlib
 from dataclasses import dataclass
+from latex_source import MAX_SOURCE, complete_source
 
 from lxml import etree as ET
 from PIL import Image, PngImagePlugin
@@ -37,7 +38,6 @@ ENGINE_IDS = {'pdflatex': 1, 'xelatex': 2, 'lualatex': 3}
 ID_ENGINES = {'0': 'pdflatex', '1': 'pdflatex', '2': 'xelatex', '3': 'lualatex',
               '4': 'platex', '5': 'tectonic'}
 EMU_PT = 12700
-MAX_SOURCE = 200_000
 
 
 def xml(data):
@@ -59,18 +59,6 @@ def relpath(part):
 
 def target(part, dest):
     return dest.lstrip('/') if dest.startswith('/') else posixpath.normpath(posixpath.join(posixpath.dirname(part), dest))
-
-
-def complete_source(source):
-    if len(source) > MAX_SOURCE or not source.strip():
-        raise ValueError('源码为空或超过 200,000 个字符。')
-    if '\\documentclass' in source:
-        return source
-    # The default 10 pt class agrees with IguanaTex's size scaling convention.
-    cjk = '\\usepackage[fontset=fandol]{ctex}\n' if re.search('[\u3400-\u9fff]', source) else ''
-    return ('\\documentclass{article}\n\\usepackage{amsmath,amssymb,bm}\n' + cjk
-            + '\\pagestyle{empty}\n\\begin{document}\n\\[\n' + source
-            + '\n\\]\n\\end{document}\n')
 
 
 def encode_meta(meta):

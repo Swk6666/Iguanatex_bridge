@@ -3,7 +3,7 @@
     'use strict';
     function mount(container, options) {
         container.classList.add('ocr-panel');
-        container.innerHTML = '<details open><summary>图片 → LaTeX · DeepSeek 网页版</summary>' +
+        container.innerHTML = '<details' + (options.collapsed ? '' : ' open') + '><summary>图片 → LaTeX · DeepSeek 网页版</summary>' +
             '<p class="ocr-note">选择、拖入或粘贴公式截图。点击识别会将这张图片发送到 DeepSeek；首次使用需在独立浏览器中登录。</p>' +
             '<div class="ocr-actions"><label class="ocr-file">选择图片<input type="file" accept="image/png,image/jpeg,image/webp"></label>' +
             '<button type="button" data-action="login">打开 / 登录 DeepSeek</button></div>' +
@@ -31,10 +31,18 @@
             active = value; start.disabled = value; login.disabled = value; input.disabled = value; use.disabled = value;
             cancel.hidden = !value; cancel.disabled = value && !jobId;
         }
-        function applySource(source) {
-            options.source.value = source;
+        async function applySource(source) {
+            var original = options.source.value;
+            try {
+                var prepared = options.prepareSource ? await options.prepareSource(source, original) : source;
+                if (options.source.value !== original) throw new Error('编辑区已变化，请核对后重新采用识别结果。');
+                options.source.value = prepared;
+            } catch (e) {
+                resultBox.querySelector('textarea').value = source; resultBox.hidden = false;
+                throw e;
+            }
             options.source.dispatchEvent(new Event('input', {bubbles: true}));
-            if (options.onSource) options.onSource(source);
+            if (options.onSource) options.onSource(options.source.value);
         }
         function readFile(file) {
             return new Promise(function (resolve, reject) {
@@ -61,7 +69,7 @@
                 }
                 if (job.status === 'succeeded' && typeof job.source === 'string') {
                     if (options.source.value === original) {
-                        applySource(job.source); resultBox.hidden = true;
+                        await applySource(job.source); resultBox.hidden = true;
                         status('识别结果已填入编辑区，请核对后预览、写入。');
                     } else {
                         resultBox.querySelector('textarea').value = job.source; resultBox.hidden = false;
@@ -86,7 +94,13 @@
             try { await options.api('ocr/cancel', {id: jobId}); status('正在取消本地等待…'); }
             catch (e) { status(e.message); cancel.disabled = false; }
         };
-        use.onclick = function () { applySource(resultBox.querySelector('textarea').value); resultBox.hidden = true; status('已采用识别结果，请预览核对。'); };
+        use.onclick = async function () {
+            if (active || options.canStart && !options.canStart()) return;
+            setBusy(true);
+            try { await applySource(resultBox.querySelector('textarea').value); resultBox.hidden = true; status('已采用识别结果，请预览核对。'); }
+            catch (e) { status(e.message); }
+            finally { setBusy(false); }
+        };
         return {isBusy: function () { return active; }};
     }
     root.IguanaOcr = {mount: mount};

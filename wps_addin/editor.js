@@ -57,6 +57,7 @@
     async function renderFormula() {
         var pointSize = Number($('pointSize').value);
         if (!isFinite(pointSize) || pointSize < 4 || pointSize > 200) throw new Error('字号须在 4–200 pt 之间。');
+        await IguanaLatex.prepare($('source'), api);
         var requestKey = key();
         if (preview && previewKey === requestKey) { showPreview(preview); return preview; }
         status('正在使用本机 LaTeX 编译…');
@@ -76,6 +77,8 @@
         finally { busy = false; document.querySelectorAll('button, textarea, select, input').forEach(function (e) { e.disabled = false; }); }
     }
     var ocr = window.IguanaOcr ? window.IguanaOcr.mount($('ocrPanel'), {api: api, source: $('source'),
+        collapsed: true,
+        prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); },
         canStart: function () { return !busy; }, onSource: function () { preview = null; $('previewSize').hidden = true; }}) : null;
     $('previewButton').onclick = function () { return run(renderFormula); };
     $('applyButton').onclick = function () { return run(async function () {
@@ -109,7 +112,7 @@
     }); };
     async function init() {
         if (mode === 'help') {
-            $('help').hidden = false; status('IguanaTex Bridge 0.4.0 · 本地 WPS 加载项');
+            $('help').hidden = false; status('IguanaTex Bridge 0.4.1 · 本地 WPS 加载项');
             var info = await api('doctor'); $('doctor').textContent = JSON.stringify(info, null, 2); return;
         }
         if (mode === 'protect') { $('protect').hidden = false; status('准备检查当前演示文稿中的公式源码。'); return; }
@@ -120,7 +123,7 @@
             var meta = await api('wps/metadata', ctx.sourceData);
             if (!meta.found) throw new Error('选中的对象没有可读的 IguanaTex 源码。若仅剩 PNG 备份，请使用独立 PPTX 编辑器恢复。');
             if (!['xelatex','pdflatex','lualatex'].includes(meta.engine)) throw new Error('原公式使用暂不支持的编译引擎；请通过独立编辑器转换。');
-            $('source').value = meta.source; $('engine').value = meta.engine;
+            await IguanaLatex.load($('source'), meta.source, api); $('engine').value = meta.engine;
             $('pointSize').value = Number(meta.tags.IGUANATEXSIZE) || 24;
             appliedPointSize = Number($('pointSize').value);
             $('output').value = ctx.shape.Type === 13 && meta.tags.OUTPUTTYPE !== 'SVG' ? 'png' : 'svg';
@@ -128,7 +131,11 @@
             $('applyButton').textContent = '更新此公式';
             $('editNote').textContent = '更新保留位置、旋转、翻转和层叠顺序，宽高按上方选项处理。Shape 组合将整体替换为所选格式；SVG 保留矢量清晰度及 LaTeX 源码，不保留逐字 Shape 结构。动画、手动字形配色、特效与交互动作需重新设置。';
             status('已读取选中公式 · ' + meta.origin);
-        } else { $('source').value = 'E = mc^{2}'; status('输入公式，预览后插入当前幻灯片。'); }
+        } else {
+            await IguanaLatex.load($('source'), 'E = mc^{2}', api);
+            IguanaLatex.selectBody($('source'));
+            status('编辑完整 LaTeX 文档：可修改宏包和正文，预览后插入当前幻灯片。');
+        }
         sizeHint();
     }
     init().catch(function (e) { $('editor').hidden = true; failure(e); });

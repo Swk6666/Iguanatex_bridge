@@ -1,4 +1,4 @@
-# IguanaTex Bridge 0.4.0 · 桌面公式编辑器与 PowerPoint / WPS 加载项
+# IguanaTex Bridge 0.4.1 · 桌面公式编辑器与 PowerPoint / WPS 加载项
 
 推荐：[独立桌面 GUI](docs/DESKTOP.md)，界面沿用 Ubuntu 版，新增截图自动识别入口。另有 [macOS / Windows PowerPoint 安装](docs/INSTALL_OFFICE.md) · [DeepSeek 图片转 TeX](docs/DEEPSEEK.md)。本项目不依赖上游 IguanaTeX；下文原有 WPS 工作流和可选兼容工作流仍适用。
 
@@ -12,10 +12,43 @@
 
 此目录是当前安装位置，请保留。移动目录后，应在新位置重新运行安装脚本。安装包不携带 Python、TeX Live 或上游 IguanaTex。
 
+## 完整 LaTeX 文档编辑
+
+新建公式时，编辑区直接提供完整文档，包括 `\documentclass`、`\usepackage`、`\begin{document}` 和 `\end{document}`。可以在导言区添加宏包、定义命令，再修改正文公式；字号仍通过顶部控件调整。
+
+编辑区显示的代码就是实际编译并保存到公式中的源码，与 IguanaTex 的完整文档编辑方式一致。已有完整源码原样保留，包括自定义宏包、命令和注释。若粘贴公式片段，点击预览时会先把完整文档显示出来，再进行编译；编译失败时也可直接查看和修改全部代码。
+
+默认模板如下（新建时正文为 `E = mc^{2}`）：
+
+```latex
+\documentclass[10pt]{article}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+\else
+  \usepackage[fontset=fandol]{ctex}
+\fi
+\pagestyle{empty}
+\begin{document}
+\[
+E = mc^{2}
+\]
+\end{document}
+```
+
+中文选择 XeLaTeX 或 LuaLaTeX；pdfLaTeX 分支不加载中文宏包。默认文档按 10 pt 编译，再由字号控件按 IguanaTex 规则缩放。自行改动 `documentclass` 的基准字号时，请同时留意这个缩放关系。
+
+截图识别返回公式片段时，只替换现有文档的正文，保留导言区；返回完整文档时采用该完整文档。已有源码结构不完整或等待期间又修改了源码时，会保留识别结果供手动核对，不覆盖原文。桌面端“复制 TeX”和“保存 TeX”也输出完整文档。
+
+新建 / 编辑时截图识别区默认折叠，点击标题即可展开；PowerPoint 的“截图识别”入口直接展开，桌面端放入图片后也会展开。
+
+![WPS 中编辑自定义宏包和命令的完整文档并预览](docs/wps_full_document.png)
+
 ## 日常使用
 
 1. 在 WPS 演示中打开或新建文稿，选中目标幻灯片。
-2. 点击 **IguanaTex → 新建公式**，输入公式片段或完整 LaTeX 文档。
+2. 点击 **IguanaTex → 新建公式**，编辑包含导言区和正文的完整 LaTeX 文档。
 3. 点击 **预览**（快捷键 Ctrl+Enter，Mac 为 Command+Enter），再点击 **插入当前幻灯片**。
 4. 以后选中公式图片、SVG 或 IguanaTex Shape 组合，点击 **编辑选中公式**，修改后点击 **更新此公式**。
 5. 点击编辑器右上角“关闭”，在 WPS 中正常保存为 `.pptx`。图片为嵌入对象，换电脑不依赖临时图片路径。
