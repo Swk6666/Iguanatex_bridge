@@ -52,6 +52,27 @@
     $('source').oninput = previewChanged;
     $('engine').onchange = previewChanged;
     $('output').onchange = previewChanged;
+    // 100% by default so different font sizes look different; "fit" is opt-in.
+    var fitKey = 'iguanatex-bridge.previewFit', fitPreview = false;
+    try { fitPreview = window.localStorage.getItem(fitKey) === '1'; } catch (ignored) {}
+    function showZoom() { $('previewZoom').textContent = fitPreview ? '适应窗口' : '100%'; }
+    function showPreview() {
+        var width = preview.width * 96 / 72, height = preview.height * 96 / 72, fit = 1;
+        if (fitPreview && width > 0 && height > 0) {
+            fit = Math.min(1, Math.max(1, $('preview').clientWidth - 24) / width, Math.max(1, $('preview').clientHeight - 24) / height);
+        }
+        $('formulaImage').src = 'data:image/png;base64,' + preview.png;
+        if (width > 0 && height > 0) {
+            $('formulaImage').style.width = width * fit + 'px'; $('formulaImage').style.height = height * fit + 'px';
+        }
+        $('formulaImage').hidden = false; $('previewHint').hidden = true;
+    }
+    showZoom();
+    $('previewZoom').onclick = function () {
+        fitPreview = !fitPreview; showZoom();
+        try { window.localStorage.setItem(fitKey, fitPreview ? '1' : '0'); } catch (ignored) {}
+        if (preview && previewKey === key()) showPreview();
+    };
     async function renderFormula() {
         try {
             setCompileError(null);
@@ -66,8 +87,7 @@
                 preview = result;
                 previewKey = requestKey;
             }
-            $('formulaImage').src = 'data:image/png;base64,' + preview.png;
-            $('formulaImage').hidden = false; $('previewHint').hidden = true;
+            showPreview();
             status('预览已生成，请核对公式后写入。');
             return preview;
         } catch (e) {

@@ -79,6 +79,7 @@ start_desktop_mac.command
 start_desktop_windows.bat
 test_desktop.py
 ai_chat.py
+AI_INSTRUCTIONS.md
 shared/chat.js
 shared/chat.css
 shared/workspace.css

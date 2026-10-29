@@ -10,6 +10,11 @@
         container.innerHTML = '<' + wrapper + ' class="chat-main"' + (options.docked || options.collapsed ? '' : ' open') + '>' +
             (options.docked ? '' : '<summary>AI 对话 · DeepSeek API</summary>') + '<div class="chat-body">' +
             '<div class="chat-toolbar"><button type="button" data-action="new" title="开始不携带旧内容的对话">' + icon('<path d="M12 5v14M5 12h14"/>') + '新对话</button><button type="button" data-action="refresh" title="从本机服务重新读取对话">' + icon('<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>') + '刷新</button>' +
+            '<details class="chat-guide"><summary title="AI 每次回答前都会先阅读的项目指令">' + icon('<path d="M6.5 3.5h8l3 3v14h-11z"/><path d="M9.5 10h5M9.5 13.5h5M9.5 17h3"/>') + '指令</summary><div class="chat-settings-body">' +
+            '<p class="chat-guide-state">正在读取…</p>' +
+            '<textarea class="chat-instructions" rows="12" spellcheck="false" maxlength="40000" aria-label="AI 指令" placeholder="例如：只转写图片中的公式；矩阵用 bmatrix；说明用中文。"></textarea>' +
+            '<p class="chat-note">每次发送前 AI 都会先阅读这份指令，保存后下一次发送生效。&lt;!-- 注释 --&gt; 不会发送。<br><span class="chat-guide-path"></span></p>' +
+            '<div class="chat-actions"><button type="button" data-action="save-guide">保存指令</button><button type="button" data-action="reload-guide" title="放弃未保存的修改，从文件重新读取">重新读取</button></div></div></details>' +
             '<details class="chat-settings"><summary>' + icon('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>') + 'API 设置</summary><div class="chat-settings-body"><p class="chat-config-status">正在读取…</p>' +
             '<label>DeepSeek API Key<input class="chat-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="已保存时留空即可"></label>' +
             '<label>模型<input class="chat-model" type="text" spellcheck="false" value="deepseek-flash" maxlength="128"></label>' +
@@ -31,6 +36,17 @@
         var storageKey = 'iguanatex-bridge.deepseekConversation';
         var lastHistory = '', rows = {};
         function status(text) { q('.chat-status').textContent = text; }
+        var guide = q('.chat-instructions'), guideSaved = null;
+        function showGuide(data) {
+            guide.value = data.text; guideSaved = data.text;
+            q('.chat-guide-state').textContent = data.active_chars ? '已启用 · ' + data.active_chars + ' 字' : '尚未填写，AI 只使用默认规则';
+            q('.chat-guide').classList.toggle('active', data.active_chars > 0);
+            q('.chat-guide-path').textContent = '文件：' + data.path;
+        }
+        async function loadGuide() {
+            try { showGuide(await options.api('chat/instructions', {})); }
+            catch (e) { q('.chat-guide-state').textContent = e.message; }
+        }
         function mayStart() { return !active && !loading && (!options.canStart || options.canStart()); }
         function saveConversation(id) {
             try { if (id) root.localStorage.setItem(storageKey, id); else root.localStorage.removeItem(storageKey); } catch (ignored) {}
@@ -164,7 +180,8 @@
             }
             if (!configured) { q('.chat-settings').open = true; status('请先填写并保存 DeepSeek API Key。'); return; }
             if (!prompt.value.trim() && !chosen) { status('请输入文字或选择一张图片。'); return; }
-            setBusy(true); status('正在发送到 DeepSeek…');
+            setBusy(true);
+            status(guideSaved !== null && guide.value !== guideSaved ? '正在发送到 DeepSeek…（AI 指令有未保存的修改，本次使用已保存的版本）' : '正在发送到 DeepSeek…');
             var sent = prompt.value;
             try {
                 var job = await options.api('chat/start', {message: prompt.value, data: chosen ? await readFile(chosen) : null,
@@ -183,6 +200,18 @@
             } catch (e) { status(e.message); }
             finally { setBusy(false); }
         }
+        q('.chat-guide').ontoggle = function () { if (q('.chat-guide').open && guideSaved === null) loadGuide(); };
+        guide.oninput = function () {
+            if (guideSaved !== null && guide.value !== guideSaved) q('.chat-guide-state').textContent = '有未保存的修改';
+        };
+        action('save-guide').onclick = async function () {
+            try { showGuide(await options.api('chat/instructions', {text: guide.value})); status('AI 指令已保存，下一次发送生效。'); }
+            catch (e) { status(e.message); }
+        };
+        action('reload-guide').onclick = function () {
+            if (guideSaved !== null && guide.value !== guideSaved && !root.confirm('放弃未保存的指令修改？')) return;
+            return loadGuide();
+        };
         action('save').onclick = function () { return settings(false); };
         action('clear-key').onclick = function () { return settings(true); };
         action('send').onclick = send; action('refresh').onclick = refresh;
@@ -221,6 +250,7 @@
                 try { data = await options.api('chat/history', {conversation_id: saved}); }
                 catch (e) { saveConversation(null); data = {conversation_id: null, revision: 0, turns: [], active_job: null}; status(e.message); }
                 renderHistory(data); loading = false;
+                loadGuide();
                 if (data.active_job) await poll(data.active_job);
             } catch (e) { status(e.message); }
             finally { loading = false; setBusy(false); }

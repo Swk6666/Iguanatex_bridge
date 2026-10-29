@@ -153,6 +153,8 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 return ocr.cancel(req.get('id'))
             elif op == '/api/chat/config':
                 return chat.configure(req)
+            elif op == '/api/chat/instructions':
+                return chat.project_instructions(req)
             elif op == '/api/chat/start':
                 return chat.start(req)
             elif op == '/api/chat/history':

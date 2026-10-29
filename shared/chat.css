@@ -53,10 +53,10 @@
   background:var(--surface-3);
   color:var(--text)
 }
-.chat-settings {
+.chat-guide {
   margin-left:auto
 }
-.chat-settings>summary {
+.chat-settings>summary,.chat-guide>summary {
   display:inline-flex;
   align-items:center;
   gap:5px;
@@ -66,7 +66,14 @@
   border-radius:6px;
   white-space:nowrap
 }
-.chat-settings[open]>summary {
+.chat-guide.active>summary::after {
+  content:'';
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--ok)
+}
+.chat-settings[open]>summary,.chat-guide[open]>summary {
   background:var(--accent-soft);
   color:var(--accent-strong)
 }
@@ -98,7 +105,30 @@
   padding:5px 9px;
   font-weight:400
 }
-.chat-config-status {
+.chat-instructions {
+  display:block;
+  width:100%;
+  min-height:160px;
+  max-height:45vh;
+  resize:vertical;
+  margin:8px 0 4px;
+  padding:8px 10px;
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius);
+  background:var(--code-bg);
+  color:var(--code-text);
+  font:12px/1.6 var(--mono)
+}
+.chat-instructions:focus {
+  outline:0;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--ring)
+}
+.chat-guide-path {
+  font:10.5px var(--mono);
+  overflow-wrap:anywhere
+}
+.chat-config-status,.chat-guide-state {
   display:inline-flex;
   align-items:center;
   gap:6px;

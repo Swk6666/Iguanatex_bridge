@@ -12,7 +12,7 @@ body.editing {
   flex-direction:column
 }
 .editing #preview {
-  overflow:hidden
+  overflow:auto
 }
 .editing #formulaImage {
   max-width:none;

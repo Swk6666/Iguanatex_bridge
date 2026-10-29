@@ -31,6 +31,12 @@ body {
   height:14px;
   color:var(--accent)
 }
+#formulaImage {
+  max-width:none;
+  max-height:none;
+  flex-shrink:0;
+  object-fit:fill
+}
 @media(max-width:420px) {
   .editor-tools {
     gap:5px

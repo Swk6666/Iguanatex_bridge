@@ -58,10 +58,23 @@
                 '固定原宽高：内容比例变化时会拉伸文字。') +
             '字号显示上次记录值；修改字号会切换到“按字号重设尺寸”。';
     }
+    // 100% by default: shrinking every formula to the canvas made 12 pt and 14 pt look alike.
+    var fitKey = 'iguanatex-bridge.previewFit', fitPreview = false;
+    try { fitPreview = window.localStorage.getItem(fitKey) === '1'; } catch (ignored) {}
+    function showZoom() {
+        $('previewZoom').textContent = fitPreview ? '适应窗口' : '100%';
+        $('previewZoom').title = fitPreview ? '当前缩小到预览框内；点击按实际大小显示' : '当前按实际大小显示；点击缩小到预览框内';
+    }
+    showZoom();
+    $('previewZoom').onclick = function () {
+        fitPreview = !fitPreview; showZoom();
+        try { window.localStorage.setItem(fitKey, fitPreview ? '1' : '0'); } catch (ignored) {}
+        if (preview && previewKey === key()) showPreview(preview);
+    };
     function showPreview(result) {
         ctx.sizeMode = sizeMode();
         var box = IguanaWps.layout(ctx, result), desiredWidth = box.width * 96 / 72;
-        var fit = Math.min(1, Math.max(1, $('preview').clientWidth - 24) / desiredWidth,
+        var fit = !fitPreview ? 1 : Math.min(1, Math.max(1, $('preview').clientWidth - 24) / desiredWidth,
             Math.max(1, $('preview').clientHeight - 24) / (box.height * 96 / 72));
         $('formulaImage').src = 'data:image/png;base64,' + result.png;
         $('formulaImage').style.width = desiredWidth * fit + 'px';
@@ -69,7 +82,7 @@
         $('formulaImage').hidden = false; $('previewHint').hidden = true;
         $('previewSize').hidden = false;
         $('previewSize').textContent = '写入尺寸：' + (box.width * 2.54 / 72).toFixed(2) + ' × ' +
-            (box.height * 2.54 / 72).toFixed(2) + ' cm' + (fit < .99 ? ' · 预览已缩小显示' : '');
+            (box.height * 2.54 / 72).toFixed(2) + ' cm' + (fit < .99 ? ' · 预览缩小至 ' + Math.round(fit * 100) + '%' : '');
         if (box.width > ctx.presentation.PageSetup.SlideWidth || box.height > ctx.presentation.PageSetup.SlideHeight) {
             $('previewSize').textContent += ' · 公式尺寸超过幻灯片，请考虑减小字号。';
         }

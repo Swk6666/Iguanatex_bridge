@@ -89,7 +89,7 @@
     document.addEventListener('keydown', function (e) {
         // Escape during IME composition cancels the candidate, not the panel.
         if (e.key !== 'Escape' || e.isComposing || e.keyCode === 229) return;
-        var menus = document.querySelectorAll('.popover[open], .chat-settings[open]');
+        var menus = document.querySelectorAll('.popover[open], .chat-settings[open], .chat-guide[open]');
         if (menus.length) {
             menus.forEach(function (menu) { menu.open = false; menu.querySelector('summary').focus(); });
         } else if (dock && !dock.hidden) showAssistant(false);

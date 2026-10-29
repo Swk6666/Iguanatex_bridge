@@ -160,5 +160,16 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
         f.get('pointSize').value='18';f.state.failRender=false;await f.get('previewButton').onclick();
         assert.equal(f.get('aiFix').hidden,true);
     }
-    console.log('12 WPS editor interaction tests passed');
+    {
+        // 100% preview by default: a formula taller than the canvas must not be shrunk to match other sizes.
+        const storage=new Map();const f=await fixture(false,'x',false,{storage});
+        const shown=async size=>{f.get('pointSize').value=String(size);f.get('pointSize').oninput();await f.get('previewButton').onclick();return parseFloat(f.get('formulaImage').style.height);};
+        const h12=await shown(120),h14=await shown(140);
+        assert.ok(Math.abs(h14/h12-140/120)<1e-9,'different sizes must preview at different heights');
+        assert.ok(Math.abs(h14-140*96/72)<1e-9);
+        f.get('previewZoom').onclick();assert.equal(storage.get('iguanatex-bridge.previewFit'),'1');
+        assert.ok(parseFloat(f.get('formulaImage').style.height)<=112-24+1e-9);assert.match(f.get('previewSize').textContent,/缩小至 \d+%/);
+        f.get('previewZoom').onclick();assert.ok(Math.abs(parseFloat(f.get('formulaImage').style.height)-h14)<1e-9);
+    }
+    console.log('13 WPS editor interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -11,7 +11,8 @@ from unittest.mock import patch
 import urllib.error
 import urllib.request
 
-from ai_chat import ApiSettings, ChatJobs, DeepSeekClient, ENDPOINT, DEFAULT_MODEL, NoRedirect, latex_blocks
+from ai_chat import (ApiSettings, ChatJobs, DeepSeekClient, ENDPOINT, DEFAULT_MODEL, INSTRUCTIONS, INSTRUCTIONS_FILE,
+                     MAX_INSTRUCTIONS, NoRedirect, ProjectInstructions, latex_blocks)
 from app import create_server
 from ocr import Cancelled, TERMINAL
 from test_ocr import image64
@@ -89,6 +90,14 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(body['messages'][0]['role'], 'system')
         self.assertEqual(body['thinking'], {'type': 'disabled'})
         self.assertTrue(body['stream'])
+        # A leading project system message is merged into the single system prompt.
+        opener = Opener(data)
+        DeepSeekClient(opener).answer('secret', DEFAULT_MODEL, [{'role': 'system', 'content': '项目指令'}] + messages,
+                                      updates.append, threading.Event())
+        body = json.loads(opener.calls[0][0].data)
+        self.assertEqual([m['role'] for m in body['messages']], ['system', 'user'])
+        self.assertTrue(body['messages'][0]['content'].startswith(INSTRUCTIONS))
+        self.assertTrue(body['messages'][0]['content'].endswith('项目指令'))
         self.assertEqual(result['answer'], '说明' + ANSWER[4:])
         self.assertNotIn('do not show', result['answer'])
         self.assertEqual(result['usage'], {'total_tokens': 123})
@@ -143,7 +152,8 @@ class FakeBackend:
 class ChatJobTests(unittest.TestCase):
     def setUp(self):
         td = tempfile.TemporaryDirectory(); self.addCleanup(td.cleanup)
-        self.backend = FakeBackend(); self.jobs = ChatJobs(td.name, self.backend)
+        self.guide = Path(td.name) / 'AI_INSTRUCTIONS.md'
+        self.backend = FakeBackend(); self.jobs = ChatJobs(td.name, self.backend, self.guide)
         self.addCleanup(self.jobs.close)
         self.jobs.configure({'api_key': 'test-key'})
 
@@ -154,6 +164,36 @@ class ChatJobTests(unittest.TestCase):
             if result['status'] in TERMINAL: return result
             time.sleep(.01)
         self.fail('job did not finish')
+
+    def test_project_instructions_are_read_for_every_request(self):
+        self.backend.release.set()
+        self.assertEqual(self.jobs.project_instructions({}), {'path': str(self.guide), 'text': '', 'active_chars': 0})
+        job = self.jobs.start({'message': 'a'}); self.finished(job)
+        self.assertEqual(self.backend.calls[0][0]['role'], 'user')  # missing file: built-in rules only
+        saved = self.jobs.project_instructions({'text': '<!-- 只给自己看 -->\n矩阵用 bmatrix。'})
+        self.assertEqual(saved['active_chars'], len('矩阵用 bmatrix。'))
+        job = self.jobs.start({'message': '识别图片', 'data': image64()}); self.finished(job)
+        system = self.backend.calls[1][0]
+        self.assertEqual(system['role'], 'system')
+        self.assertTrue(system['content'].endswith('矩阵用 bmatrix。'))
+        self.assertNotIn('只给自己看', system['content'])
+        self.guide.write_text('直接编辑文件也立即生效。', encoding='utf-8')  # no restart needed
+        job = self.jobs.start({'message': 'b', 'conversation_id': job['conversation_id'], 'revision': 1}); self.finished(job)
+        self.assertTrue(self.backend.calls[2][0]['content'].endswith('直接编辑文件也立即生效。'))
+        self.assertEqual(sum(m['role'] == 'system' for m in self.backend.calls[2]), 1)
+        with self.assertRaisesRegex(ValueError, '精简'):
+            self.jobs.project_instructions({'text': 'x' * (MAX_INSTRUCTIONS + 1)})
+        self.guide.write_text('x' * (MAX_INSTRUCTIONS + 1), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, '精简'):
+            self.jobs.start({'message': 'c'})
+        self.guide.write_bytes(b'\xff\xfe bad')
+        with self.assertRaisesRegex(ValueError, 'UTF-8'):
+            self.jobs.start({'message': 'c'})
+
+    def test_project_instructions_file_is_usable(self):
+        # The user edits this file freely; it only has to stay readable and within the limit.
+        self.assertTrue(INSTRUCTIONS_FILE.exists())
+        ProjectInstructions().effective()
 
     def test_text_image_followup_and_public_history(self):
         self.backend.release.set()
