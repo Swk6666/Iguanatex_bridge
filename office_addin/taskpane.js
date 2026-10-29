@@ -67,7 +67,7 @@
         var format = String(meta.tags.OUTPUTTYPE || '').toUpperCase();
         $('output').value = ['SVG', 'PDF', 'EMF'].includes(format) || selected.original.type === 'Group' || meta.tags.BITMAPVECTOR === '1' ? 'svg' : 'png';
         appliedSize = Number(meta.tags.IGUANATEXSIZE) || 24; $('pointSize').value = appliedSize;
-        $('sizeModeLabel').hidden = false; $('sizeMode').value = 'height'; $('apply').textContent = '更新已读取的公式';
+        $('sizeModeLabel').hidden = false; $('sizeMode').value = 'font'; $('apply').textContent = '更新已读取的公式';
         status(selected.original.type === 'Group' ? '已读取 IguanaTeX Shape 组合的完整源码。更新后保存为 SVG / PNG，仍可用原 IguanaTeX 继续编辑。' : '已读取公式源码和字号。修改后更新，也可用原 IguanaTeX 继续编辑。');
     }
     $('new').onclick = function () { return run(newFormula); };

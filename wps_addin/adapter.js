@@ -117,7 +117,7 @@
     function layout(ctx, data) {
         // A longer formula must be allowed to grow, including SVGs and Shape groups.
         // Keeping both old dimensions is only an explicit layout choice.
-        var old = ctx.shape, mode = ctx.sizeMode || 'height';
+        var old = ctx.shape, mode = ctx.sizeMode || 'font';
         var height = old && mode !== 'font' ? old.Height : data.height;
         var width = old && mode !== 'font' ? (mode === 'frame' ? old.Width : height * data.width / data.height) : data.width;
         if (!(width > 0 && height > 0 && isFinite(width) && isFinite(height))) throw new Error('公式尺寸无效，请检查字号后重试。');

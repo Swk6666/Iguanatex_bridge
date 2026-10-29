@@ -8,7 +8,7 @@
 <section id="editor" hidden>
   <div class="editor-scroll">
   <div class="row"><label>编译引擎 <select id="engine"><option value="xelatex">XeLaTeX · 支持中文</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label><label>输出 <select id="output"><option value="svg">SVG 矢量 · 放大清晰</option><option value="png">PNG 透明图片</option></select></label><label id="sizeLabel">字号 <input id="pointSize" aria-label="字号（pt）" title="记住手动选择的字号，下次新建时使用" type="number" min="4" max="200" step="0.5" value="18">pt</label><span id="target"></span></div>
-  <div class="row" id="sizeModeRow" hidden><label>更新尺寸 <select id="sizeMode"><option value="height">保留高度 · 宽度随内容变化</option><option value="font">按字号重设尺寸</option><option value="frame">固定原宽高 · 可能拉伸文字</option></select></label></div>
+  <div class="row" id="sizeModeRow" hidden><label>更新尺寸 <select id="sizeMode"><option value="font">按字号重设尺寸</option><option value="height">保留高度 · 宽度随内容变化</option><option value="frame">固定原宽高 · 可能拉伸文字</option></select></label></div>
   <p class="note" id="sizeHint">字号范围 4–200 pt；使用 IguanaTex 的 10 pt 模板缩放规则。</p>
   <div id="chatPanel"></div>
   <label class="source-label" for="source">完整 LaTeX 源码 <span>完整文档 · 宏包、命令与正文均可编辑</span></label>
@@ -25,10 +25,10 @@
 <section id="help" hidden>
   <h2>从这里开始</h2><ol><li>在 WPS 的 IguanaTex 功能区点击“新建公式”。</li><li>输入 LaTeX，预览后插入当前幻灯片。</li><li>选中公式图片、SVG 或 IguanaTex Shape 组合，点击“编辑选中公式”。</li></ol>
   <h2>Windows / Mac 的 PowerPoint</h2><p>安装 IguanaTex 后，打开同一份 PPTX，选中公式，使用 Edit LaTeX display → ReGenerate。返回 WPS 后可继续编辑。</p>
-  <p>更新公式默认保留高度，让宽度随内容变化，中文和公式保持自然比例。也可直接修改字号，自动切换到“按字号重设尺寸”，与 IguanaTex 的 Reset size 一样按 10 pt 模板缩放。需要严格固定占位时才选择“固定原宽高”，内容比例变化时文字会被拉伸。</p>
+  <p>更新公式默认“按字号重设尺寸”，与 IguanaTex 的 Reset size 一样按 10 pt 模板缩放，宽高按当前字号和内容重新计算，保持自然比例。需要沿用原高度时可手动选择“保留高度”。需要严格固定占位时才选择“固定原宽高”，内容比例变化时文字会被拉伸。</p>
   <p>交接前点击“检查与同步源码”，将最新原生标签同步到源码备份。Windows / Mac 的实际 Office 往返仍需在对应设备验证。</p>
   <h2>本机环境</h2><pre id="doctor">正在检查…</pre>
-  <p class="note">Shape 公式可直接读取并更新为 SVG 矢量图形，无需 Convert to Picture。SVG 可继续通过 LaTeX 编辑，但不会保留原来逐字拆分的 Shape 结构。更新保留位置、高度、旋转、翻转和层叠顺序；动画、手动字形配色、特效与交互动作需要重新设置。包含多个公式或其他内容的排版组合，请先取消外层组合。</p>
+  <p class="note">Shape 公式可直接读取并更新为 SVG 矢量图形，无需 Convert to Picture。SVG 可继续通过 LaTeX 编辑，但不会保留原来逐字拆分的 Shape 结构。更新保留位置、旋转、翻转和层叠顺序，默认按字号重设宽高；动画、手动字形配色、特效与交互动作需要重新设置。包含多个公式或其他内容的排版组合，请先取消外层组合。</p>
 </section>
 <section id="protect" hidden><h2>检查与同步源码</h2><p>以 IguanaTex 原生标签为准更新备份；原生标签丢失时尝试从替代文字恢复。完成后请保存 PPTX。</p><button id="protectButton" class="primary">检查当前演示文稿</button><pre id="protectResult"></pre></section>
 <details id="errorDetails" hidden><summary>详细信息</summary><pre id="errorText"></pre></details>

@@ -39,9 +39,9 @@ async function test(fn){await fn();count++;}
     await test(async()=>{
         const f=await fixture();assert.ok(f.get('source').value.includes(f.state.source));assert.match(f.get('source').value,/\\documentclass/);
         assert.equal(Number(f.get('pointSize').value),28);assert.equal(f.get('apply').disabled,false);
-        assert.equal(f.get('sizeMode').value,'height');
+        assert.equal(f.get('sizeMode').value,'font');
         await f.get('apply').onclick();assert.equal(f.writes[0].target.original.id,'original');
-        assert.equal(f.writes[0].mode,'height');
+        assert.equal(f.writes[0].mode,'font');
     });
     await test(async()=>{
         const f=await fixture();f.state.captureError='请选择一个公式';await f.get('load').onclick();

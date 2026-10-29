@@ -2,7 +2,7 @@
 
 在 WPS 工具栏中打开公式编辑器，编写完整 LaTeX 文档、预览并插入或更新公式。内置 DeepSeek API 对话，支持文字、截图和连续追问，显示完整回答并按需采用 LaTeX。另有独立桌面 GUI 和 macOS / Windows PowerPoint 加载项，支持 SVG / PNG、字号与源码保存，以及与原 IguanaTeX 的源码兼容。
 
-当前版本 **0.5.1**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
+当前版本 **0.5.2**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
 
 [下载最新安装包](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) · [Ubuntu 完整安装流程](docs/INSTALL_UBUNTU.md)
 

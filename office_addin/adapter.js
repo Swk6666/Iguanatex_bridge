@@ -125,6 +125,7 @@
         return {slide: slide, old: old};
     }
     function layout(target, data, mode) {
+        mode = mode || 'font';
         var old = target.original, height = old && mode !== 'font' ? old.height : data.height;
         var width = old && mode !== 'font' ? (mode === 'frame' ? old.width : height * data.width / data.height) : data.width;
         if (![width, height].every(function (n) { return Number.isFinite(n) && n > 0; })) throw new Error('公式尺寸无效。');

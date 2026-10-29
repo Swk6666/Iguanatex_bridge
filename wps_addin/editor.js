@@ -134,7 +134,7 @@
     }); };
     async function init() {
         if (mode === 'help') {
-            $('help').hidden = false; status('IguanaTex Bridge 0.5.1 · 本地 WPS 加载项');
+            $('help').hidden = false; status('IguanaTex Bridge 0.5.2 · 本地 WPS 加载项');
             var info = await api('doctor'); $('doctor').textContent = JSON.stringify(info, null, 2); return;
         }
         if (mode === 'protect') { $('protect').hidden = false; status('准备检查当前演示文稿中的公式源码。'); return; }
@@ -151,7 +151,7 @@
             $('pointSize').value = validSize(meta.tags.IGUANATEXSIZE) ? Number(meta.tags.IGUANATEXSIZE) : preferredSize();
             appliedPointSize = Number($('pointSize').value);
             $('output').value = ctx.shape.Type === 13 && meta.tags.OUTPUTTYPE !== 'SVG' ? 'png' : 'svg';
-            $('sizeModeRow').hidden = false; $('sizeMode').value = 'height';
+            $('sizeModeRow').hidden = false; $('sizeMode').value = 'font';
             $('applyButton').textContent = '更新此公式';
             $('editNote').textContent = '更新保留位置、旋转、翻转和层叠顺序，宽高按上方选项处理。Shape 组合将整体替换为所选格式；SVG 保留矢量清晰度及 LaTeX 源码，不保留逐字 Shape 结构。动画、手动字形配色、特效与交互动作需重新设置。';
             status('已读取选中公式 · ' + meta.origin);

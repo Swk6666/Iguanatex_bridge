@@ -7,7 +7,7 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     const nodes={}, renders=[], replacements=[], closed=[];
     const storage = options.storage || new Map();
     const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700,clientHeight:112});
-    get('pointSize').value='18';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='height';
+    get('pointSize').value='18';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='font';
     const ctx={shape:edit?{Id:1,Type:28,Width:30,Height:18.4,Left:70,Top:90}:null,slide:{SlideIndex:1},sourceData:{tags:{LATEXADDIN:'x'}},
         presentation:{PageSetup:{SlideWidth:960,SlideHeight:540}}};
     const sandbox={URLSearchParams,location:{search:edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},addEventListener(){},
@@ -85,13 +85,13 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     }
     {
         const f=await fixture(true,'sentence',false,{sentence:true});
-        assert.equal(f.get('sizeMode').value,'height');
+        assert.equal(f.get('sizeMode').value,'font');
         await f.get('previewButton').onclick();
         const image=f.get('formulaImage'), expected=139.44/11.52;
         assert.ok(Math.abs(parseFloat(image.style.width)/parseFloat(image.style.height)-expected)<1e-10);
         await f.get('applyButton').onclick();
-        assert.equal(f.replacements[0].height,18.4);assert.ok(f.replacements[0].width>220);
-        f.get('sizeMode').value='frame';f.ctx.shape.Width=30;f.get('sizeMode').onchange();
+        assert.equal(f.replacements[0].height,24*1.152);assert.equal(f.replacements[0].width,24*13.944);
+        f.get('sizeMode').value='frame';f.ctx.shape.Width=30;f.ctx.shape.Height=18.4;f.get('sizeMode').onchange();
         await f.get('previewButton').onclick();
         assert.match(f.get('previewSize').textContent,/会拉伸文字/);
         assert.ok(Math.abs(parseFloat(image.style.width)/parseFloat(image.style.height)-30/18.4)<1e-10);

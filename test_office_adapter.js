@@ -55,7 +55,7 @@ async function test(fn){await fn();count++;}
         assert.equal(next.original.z,0);
         assert.equal(f.state.writes[0].options.coercionType,'xmlSvg');
         // Repeated updates use a fresh ID/snapshot instead of targeting a deleted shape.
-        const again=await f.api.apply(next,data,'font');assert.equal(again.original.width,100);
+        const again=await f.api.apply(next,data);assert.equal(again.original.width,100);assert.equal(again.original.height,40);
     });
     await test(async()=>{
         const f=fixture();const ctx=await f.api.capture(false);const next=await f.api.apply(ctx,{...data,output:'png'},'font');

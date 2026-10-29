@@ -41,7 +41,7 @@ const data = {path:'/tmp/test.png',tags:{LATEXADDIN:'new CaseSensitive source'},
 {
     const f=fixture(), ctx=bridge.context(true), p=bridge.replace(ctx,data);
     assert.equal(f.shapes.length,3); assert.ok(!f.shapes.includes(f.old));
-    assert.equal(p.Height,30); assert.equal(p.Width,90); assert.equal(p.Left,70);
+    assert.equal(p.Height,20); assert.equal(p.Width,60); assert.equal(p.Left,70);
     assert.equal(p.Top,90); assert.equal(p.Rotation,24); assert.equal(p.ZOrderPosition,1);
     assert.equal(ctx.shape,p); assert.equal(bridge.snapshot(p).tags.LATEXADDIN,data.tags.LATEXADDIN);
 }
@@ -76,7 +76,7 @@ const data = {path:'/tmp/test.png',tags:{LATEXADDIN:'new CaseSensitive source'},
     const f=fixture();group(f.old,[glyph(f),glyph(f,'')]);f.svg();
     const ctx=bridge.context(true), p=bridge.replace(ctx,{...data,output:'svg'});
     assert.equal(p.Type,28);assert.equal(f.shapes.length,3);assert.equal(p.ZOrderPosition,1);
-    assert.equal(p.Height,30);assert.equal(p.Width,90);assert.equal(p.Left,70);assert.equal(ctx.sourceData.tags.LATEXADDIN,data.tags.LATEXADDIN);
+    assert.equal(p.Height,20);assert.equal(p.Width,60);assert.equal(p.Left,70);assert.equal(ctx.sourceData.tags.LATEXADDIN,data.tags.LATEXADDIN);
     bridge.validate(ctx);
 }
 {
@@ -139,11 +139,11 @@ const data = {path:'/tmp/test.png',tags:{LATEXADDIN:'new CaseSensitive source'},
     const f=fixture();f.old.Type=28;f.old.Width=30;f.old.Height=18.4;f.svg();
     const ctx=bridge.context(true), sentence={...data,output:'svg',width:139.44,height:11.52};
     const natural=bridge.layout(ctx,sentence);
-    assert.equal(natural.height,18.4);assert.ok(natural.width>220);
+    assert.equal(natural.height,sentence.height);assert.equal(natural.width,sentence.width);
     assert.ok(Math.abs(natural.width/natural.height-139.44/11.52)<1e-10);
     ctx.sizeMode='frame';
     assert.equal(bridge.layout(ctx,sentence).width,30); // Still available explicitly.
     ctx.sizeMode='height';
-    const p=bridge.replace(ctx,sentence);assert.equal(p.Width,natural.width);assert.equal(p.Left,70);
+    const p=bridge.replace(ctx,sentence);assert.equal(p.Height,18.4);assert.equal(p.Width,18.4*sentence.width/sentence.height);assert.equal(p.Left,70);
 }
 console.log('18 WPS adapter/ribbon contract tests passed');
