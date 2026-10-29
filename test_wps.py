@@ -106,8 +106,9 @@ class WpsIntegrationTests(unittest.TestCase):
             compile_formula.assert_not_called()
 
     def test_assets_and_path_traversal(self):
-        with urllib.request.urlopen(self.base + '/shared/latex.js') as response:
-            self.assertEqual(response.status, 200)
+        for asset in ('latex.js', 'workspace.js', 'workspace.css'):
+            with urllib.request.urlopen(self.base + '/shared/' + asset) as response:
+                self.assertEqual(response.status, 200)
         for asset in ['ribbon.xml', 'main.js', 'adapter.js', 'editor.js', 'style.css']:
             with urllib.request.urlopen(self.base + '/wps/' + asset) as response:
                 self.assertEqual(response.status, 200)

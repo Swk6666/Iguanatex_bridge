@@ -81,6 +81,10 @@ test_desktop.py
 ai_chat.py
 shared/chat.js
 shared/chat.css
+shared/workspace.css
+shared/workspace.js
 docs/API_CHAT.md
 test_ai_chat.py
 test_chat_ui.js
+docs/wps_compact_editor.png
+docs/wps_compact_ai.png

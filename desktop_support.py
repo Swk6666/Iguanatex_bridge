@@ -36,7 +36,7 @@ class LocalService:
         self.token = None
         try:
             health = self._request('/health', timeout=1)
-            if health.get('app') != 'IguanaTexBridge' or health.get('version') != '0.5.2':
+            if health.get('app') != 'IguanaTexBridge' or health.get('version') != '0.6.0':
                 raise ValueError('端口被其他服务或旧版本占用。')
         except (OSError, URLError, ValueError):
             from app import create_server

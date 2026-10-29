@@ -61,7 +61,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 self.reply({'token': token})
                 return
             if path == '/health':
-                self.reply({'app': 'IguanaTexBridge', 'version': '0.5.2'})
+                self.reply({'app': 'IguanaTexBridge', 'version': '0.6.0'})
                 return
             assets = {'/': ('ui.html', 'text/html; charset=utf-8'),
                       '/wps/': ('wps_addin/index.html', 'text/html; charset=utf-8'),
@@ -77,6 +77,8 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       '/shared/ocr.css': ('shared/ocr.css', 'text/css'),
                       '/shared/chat.js': ('shared/chat.js', 'application/javascript'),
                       '/shared/chat.css': ('shared/chat.css', 'text/css'),
+                      '/shared/workspace.css': ('shared/workspace.css', 'text/css'),
+                      '/shared/workspace.js': ('shared/workspace.js', 'application/javascript'),
                       '/office/': ('office_addin/taskpane.html', 'text/html; charset=utf-8'),
                       '/office/taskpane.html': ('office_addin/taskpane.html', 'text/html; charset=utf-8'),
                       '/office/adapter.js': ('office_addin/adapter.js', 'application/javascript'),
@@ -239,7 +241,7 @@ def main():
         threading.Thread(target=secure.serve_forever, daemon=True).start()
         print(f'PowerPoint 加载项：https://localhost:{secure.server_port}/office/', flush=True)
     url = f'http://127.0.0.1:{server.server_port}/'
-    print('IguanaTex Bridge 0.5.2，按 Ctrl+C 退出。', flush=True)
+    print('IguanaTex Bridge 0.6.0，按 Ctrl+C 退出。', flush=True)
     print('本地界面：' + url, flush=True)
     if not args.no_browser:
         webbrowser.open(url)

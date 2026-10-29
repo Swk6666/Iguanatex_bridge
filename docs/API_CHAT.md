@@ -17,19 +17,19 @@ git pull --ff-only
 bash install.sh
 ```
 
-关闭旧公式编辑窗口，再从 WPS 的 IguanaTex 工具栏打开。展开 **AI 对话 · DeepSeek API → API 设置**，填写 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 的 API Key 并保存。模型默认 **deepseek-flash**，接口固定为 `https://api.deepseek.com/chat/completions`。不需要浏览器登录、Playwright、OpenAI SDK 或额外 Python 依赖。OpenAI 的 API Key 不能用于 DeepSeek 接口。
+关闭旧公式编辑窗口，再从 WPS 的 IguanaTex 工具栏打开。点击右上角 **AI 助手 → API 设置**，填写 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 的 API Key 并保存。模型默认 **deepseek-flash**，接口固定为 `https://api.deepseek.com/chat/completions`。不需要浏览器登录、Playwright、OpenAI SDK 或额外 Python 依赖。OpenAI 的 API Key 不能用于 DeepSeek 接口。
 
 保存后密钥输入框清空，只显示是否已经配置。之后留空保存设置会保留原密钥；“删除本机密钥”只删除本机文件中的密钥。也可以在启动服务的环境中设置 `DEEPSEEK_API_KEY`，本机设置优先；如果删除本机密钥后仍显示已配置，检查是否设置了此环境变量。Ubuntu systemd 用户服务不会自动继承终端里新执行的 `export`，推荐直接使用插件设置。
 
 ## 使用
 
 1. 输入文字，或选择、拖入、粘贴一张 PNG / JPEG / WebP 图片。每张不超过 10 MB / 2000 万像素；建议裁剪到需要识别的部分。
-2. 点击 **发送到 DeepSeek**（文字框内也可按 Ctrl / Command + Enter）。只有点击发送才会调用 API；选择图片或保存设置不会上传。
+2. 点击 **发送**（文字框内也可按 Ctrl / Command + Enter）。只有点击发送才会调用 API；选择图片或保存设置不会上传。
 3. 回答逐步显示，保留说明文字和代码。可以复制完整回答；有 LaTeX 代码块时，每个代码块提供 **采用 LaTeX** 按钮。采用完整文档会替换源码；采用公式片段时会合入现有文档并保留宏包。最后由你预览、写入幻灯片。
 4. 在同一面板继续输入可追问；会重新发送当前对话中已成功完成的文字、图片和回答作为上下文。不会自动发送编辑区源码或 PPTX；需要分析代码时请粘贴到消息中。
 5. **新对话**从空上下文开始。关闭并重新打开窗口会恢复此服务中最近使用的对话；**刷新对话**可恢复网络短暂中断或其他窗口更新后的状态。
 
-WPS 预览和插入／更新按钮仍固定在窗口底部，字号记忆及成功写入后自动关闭保持不变。面板展开较高时，上方编辑区可滚动。
+AI 以侧栏打开，回答区独立滚动，输入区固定在下方；点击右上角 × 或按 Esc 收起，草稿和附件仍保留。小窗口使用抽屉，收起后可查看被遮住的源码与预览。插入／更新按钮始终在底部；WPS 字号记忆及成功写入后自动关闭保持不变。
 
 ## 数据、范围与故障
 

@@ -3,20 +3,22 @@
     'use strict';
     function mount(container, options) {
         container.classList.add('chat-panel');
-        container.innerHTML = '<details class="chat-main"' + (options.collapsed ? '' : ' open') + '><summary>AI 对话 · DeepSeek API</summary>' +
-            '<p class="chat-note">输入文字，也可附一张图片；支持连续追问。发送时将本次内容与当前对话传给 DeepSeek，按 API 用量计费。</p>' +
-            '<details class="chat-settings"><summary>API 设置 <span class="chat-config-status">正在读取…</span></summary>' +
-            '<label>DeepSeek API Key<input class="chat-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="填写密钥；已保存时留空即可"></label>' +
+        var wrapper = options.docked ? 'div' : 'details';
+        container.innerHTML = '<' + wrapper + ' class="chat-main"' + (options.docked || options.collapsed ? '' : ' open') + '>' +
+            (options.docked ? '' : '<summary>AI 对话 · DeepSeek API</summary>') + '<div class="chat-body">' +
+            '<div class="chat-toolbar"><button type="button" data-action="new" title="开始不携带旧内容的对话">新对话</button><button type="button" data-action="refresh">刷新对话</button>' +
+            '<details class="chat-settings"><summary>API 设置</summary><div class="chat-settings-body"><p class="chat-config-status">正在读取…</p>' +
+            '<label>DeepSeek API Key<input class="chat-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="已保存时留空即可"></label>' +
             '<label>模型<input class="chat-model" type="text" spellcheck="false" value="deepseek-flash" maxlength="128"></label>' +
-            '<p class="chat-note">密钥仅保存在本机，不写入 PPTX 或 Git 仓库。接口：api.deepseek.com。<a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">获取 DeepSeek API Key</a></p>' +
-            '<div class="chat-actions"><button type="button" data-action="save">保存设置</button><button type="button" data-action="clear-key">删除本机密钥</button></div></details>' +
-            '<div class="chat-actions"><button type="button" data-action="new">新对话</button><button type="button" data-action="refresh">刷新对话</button><span class="chat-note">对话在本次服务运行期间保留</span></div>' +
+            '<p class="chat-note">密钥仅保存在本机，不写入 PPTX 或 Git。<a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">获取 API Key</a></p>' +
+            '<div class="chat-actions"><button type="button" data-action="save">保存设置</button><button type="button" data-action="clear-key">删除本机密钥</button></div></div></details></div>' +
             '<div class="chat-history" role="region" aria-label="DeepSeek 对话记录"></div>' +
-            '<label class="chat-prompt-label">发送给 DeepSeek<textarea class="chat-prompt" rows="3" maxlength="8000" spellcheck="false" placeholder="例如：请识别截图中的公式，并给出包含宏包的完整 LaTeX。也可以直接输入问题。"></textarea></label>' +
-            '<div class="chat-image" tabindex="0" aria-label="图片拖放区"><span>可拖入或粘贴一张图片 · PNG / JPEG / WebP · ≤10 MB</span><img alt="待发送的图片" hidden></div>' +
-            '<div class="chat-actions"><label class="chat-file">选择图片<input type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" data-action="remove" hidden>移除图片</button>' +
-            '<button class="chat-send" type="button" data-action="send">发送到 DeepSeek</button><button type="button" data-action="cancel" hidden>停止等待</button></div>' +
-            '<p class="chat-status" role="status" aria-live="polite"></p></details>';
+            '<div class="chat-composer"><label class="chat-prompt-label">发送给 DeepSeek<textarea class="chat-prompt" rows="3" maxlength="8000" spellcheck="false" placeholder="描述公式，或附图让 AI 识别…"></textarea></label>' +
+            '<div class="chat-image" tabindex="0" aria-label="图片拖放区"><span>拖入或粘贴图片 · ≤10 MB</span><img alt="待发送的图片" hidden></div>' +
+            '<div class="chat-actions"><label class="chat-file">＋ 图片<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="选择图片"></label><button type="button" data-action="remove" hidden>移除图片</button>' +
+            '<button class="chat-send" type="button" data-action="send" title="Ctrl / ⌘ + Enter 发送">发送</button><button type="button" data-action="cancel" hidden>停止等待</button></div>' +
+            '<p class="chat-note chat-disclosure">文字与图片发送至 DeepSeek，按 API 用量计费。</p>' +
+            '<p class="chat-status" role="status" aria-live="polite"></p></div></div></' + wrapper + '>';
         var q = function (s) { return container.querySelector(s); };
         var action = function (s) { return q('[data-action="' + s + '"]'); };
         var prompt = q('.chat-prompt'), history = q('.chat-history'), zone = q('.chat-image'), image = q('img');
@@ -37,7 +39,7 @@
         }
         function showConfig(config) {
             configured = config.configured; model.value = config.model;
-            q('.chat-config-status').textContent = config.configured ? '· 已配置（' + config.key_source + '）' : '· 尚未配置';
+            q('.chat-config-status').textContent = config.configured ? '已配置（' + config.key_source + '）' : '尚未配置';
             if (!config.configured) q('.chat-settings').open = true;
         }
         function removeImage() {
@@ -98,7 +100,7 @@
             lastHistory = signature;
             var follow = history.scrollTop + history.clientHeight >= history.scrollHeight - 40;
             if (!data.turns.length) {
-                history.replaceChildren(node('p', 'chat-empty', '可以询问公式、解释截图，或让 DeepSeek 修改 LaTeX。回答不会自动覆盖源码。'));
+                history.replaceChildren(node('p', 'chat-empty', '识别截图、修改公式或解释符号。\n回答中的 LaTeX 可一键采用。\n\n对话在本次服务运行期间保留。'));
                 rows = {}; return;
             }
             if (!Object.keys(rows).length) history.replaceChildren();
@@ -169,7 +171,7 @@
             setBusy(true);
             try {
                 showConfig(await options.api('chat/config', {api_key: keyInput.value, model: model.value.trim(), clear_key: clear}));
-                keyInput.value = ''; status(clear ? '已删除本机保存的密钥。' : '设置已保存在本机。点击发送即可开始对话。');
+                keyInput.value = ''; if (configured) q('.chat-settings').open = false; status(clear ? '已删除本机保存的密钥。' : '设置已保存在本机。点击发送即可开始对话。');
             } catch (e) { status(e.message); }
             finally { setBusy(false); }
         }

@@ -48,7 +48,7 @@
         return preview;
     }
     var chat = IguanaChat.mount($('chatPanel'), {api: api, source: $('source'), canStart: function () { return !busy; },
-        collapsed: mode !== 'ocr',
+        collapsed: false, docked: true,
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); }, onSource: function () { preview = null; }});
     async function newFormula() {
         mode = 'new'; reset(); await IguanaLatex.load($('source'), 'E=mc^{2}', api);

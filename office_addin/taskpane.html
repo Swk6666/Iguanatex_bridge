@@ -1,18 +1,21 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IguanaTex Bridge · PowerPoint</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/chat.css">
+<title>IguanaTex Bridge · PowerPoint</title><link rel="stylesheet" href="/shared/workspace.css"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/chat.css">
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head>
-<body><header><span class="mark">∑</span><div><h1>IguanaTex Bridge</h1><p>PowerPoint · Mac / Windows</p></div></header>
-<main><div id="status" role="status" aria-live="polite">正在连接 PowerPoint…</div>
-<div class="row"><button id="new">新建公式</button><button id="load">编辑选中公式</button></div>
-<div id="chatPanel"></div>
-<label for="source">完整 LaTeX 源码 · 宏包、命令与正文均可编辑</label><textarea id="source" spellcheck="false">E=mc^{2}</textarea>
-<div class="row"><label>引擎<select id="engine"><option value="xelatex">XeLaTeX · 中文</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label>
-<label>输出<select id="output"><option value="svg">SVG 矢量</option><option value="png">PNG 透明图片</option></select></label>
-<label>字号 / pt<input id="pointSize" type="number" min="4" max="200" step="0.5" value="24"></label></div>
-<label id="sizeModeLabel" hidden>更新尺寸<select id="sizeMode"><option value="font">按字号重设尺寸</option><option value="height">保留高度 · 宽度随内容变化</option><option value="frame">固定原宽高 · 可能拉伸文字</option></select></label>
-<div id="preview"><img id="formulaImage" alt="公式预览" hidden><span id="previewHint">预览将在此处显示</span></div>
-<div class="row"><button id="previewButton">预览</button><button id="apply" class="primary">插入当前幻灯片</button></div>
-<p class="note">公式和 IguanaTex 源码一同保存。更新保留位置与所选宽高规则；旋转、翻转、动画和特效需重新设置。更新后请保存 PPTX。</p>
-<details><summary>环境检查与兼容性</summary><p class="note">图片公式需要 PowerPointApi 1.5；Shape 组合和层叠顺序需要 1.8。可与原 IguanaTeX 互相读取和修改源码、引擎及字号。Shape 更新为 SVG / PNG 后仍可再次编辑；逐字形状样式不保留。含其他对象的外层排版组合需先取消外层组合。</p><button id="doctor">检查本机 LaTeX</button><pre id="diagnostics"></pre><a href="/" target="_blank" rel="noopener">打开独立 PPTX 编辑器</a></details>
-</main><script src="/shared/latex.js"></script><script src="/shared/chat.js"></script><script src="adapter.js"></script><script src="taskpane.js"></script></body></html>
+<body><header class="app-header"><span class="mark" aria-hidden="true">∑</span><h1>IguanaTex <span>Bridge</span></h1><span class="spacer"></span><button id="assistantToggle" aria-controls="assistantDock" aria-expanded="false">AI 助手</button></header>
+<main class="editor-shell">
+<div class="office-navigation"><button id="new" class="quiet">新建公式</button><button id="load" class="quiet">编辑选中公式</button></div>
+<div class="editor-tools">
+<label>字号<input id="pointSize" aria-label="字号（pt）" type="number" min="4" max="200" step="0.5" value="24">pt</label>
+<label><select id="engine" aria-label="编译引擎"><option value="xelatex">XeLaTeX</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label>
+<label><select id="output" aria-label="输出格式"><option value="svg">SVG 矢量</option><option value="png">PNG 图片</option></select></label>
+<span class="spacer"></span><details class="popover"><summary>更多</summary><div class="popover-content">
+<label id="sizeModeLabel" hidden>更新尺寸<select id="sizeMode"><option value="font">按字号重设尺寸</option><option value="height">保留高度</option><option value="frame">固定原宽高 · 可能拉伸</option></select></label>
+<p class="note">公式和源码一同保存。更新保留位置与所选宽高规则；旋转、翻转、动画和特效需重新设置。更新后请保存 PPTX。</p>
+<details><summary>环境与兼容性 ⌄</summary><p class="note">图片公式需要 PowerPointApi 1.5；Shape 组合和层叠顺序需要 1.8。与原 IguanaTeX 互相读取源码、引擎及字号。Shape 更新为 SVG / PNG 后仍可再次编辑；逐字形状样式不保留。含其他对象的外层组合需先取消。</p><button id="doctor">检查本机 LaTeX</button><pre id="diagnostics"></pre><a href="/" target="_blank" rel="noopener">打开独立 PPTX 编辑器</a></details>
+</div></details></div>
+<div class="work-area"><div class="formula-pane"><div class="source-head"><label for="source">LaTeX 源码</label><span class="source-caption">.tex · 完整文档</span></div><textarea id="source" spellcheck="false" aria-label="完整 LaTeX 源码">E=mc^{2}</textarea>
+<div class="preview-pane"><div class="preview-head"><strong>预览</strong></div><div id="preview" class="preview-canvas"><img id="formulaImage" alt="公式预览" hidden><span id="previewHint">编译结果将在此处显示</span></div></div></div>
+<aside id="assistantDock" class="assistant-dock" aria-label="AI 助手" hidden><div class="dock-heading">AI 助手 <span>DeepSeek</span><span class="spacer"></span><button id="assistantClose" class="quiet icon-button" aria-label="收起 AI 助手">×</button></div><div id="chatPanel"></div></aside></div>
+<div class="actionbar"><div id="status" role="status" aria-live="polite">正在连接 PowerPoint…</div><div class="actions"><button id="previewButton">预览</button><button id="apply" class="primary">插入当前幻灯片</button></div></div>
+</main><script src="/shared/latex.js"></script><script src="/shared/chat.js"></script><script src="adapter.js"></script><script src="taskpane.js"></script><script src="/shared/workspace.js"></script></body></html>

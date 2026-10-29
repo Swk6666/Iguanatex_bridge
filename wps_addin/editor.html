@@ -1,25 +1,28 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IguanaTex 公式编辑器</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/chat.css"></head>
+<title>IguanaTex 公式编辑器</title><link rel="stylesheet" href="/shared/workspace.css"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/chat.css"></head>
 <body>
-<header><div class="mark">∑</div><div><h1>IguanaTex <span>Bridge</span></h1><p>在 WPS 中编写，随 PPTX 跨平台编辑</p></div><span class="local">本机编译</span><button id="closeButton" type="button">关闭</button></header>
-<main>
-<div id="status" role="status" aria-live="polite">正在连接 WPS…</div>
+<header class="app-header"><div class="mark" aria-hidden="true">∑</div><h1>IguanaTex <span>Bridge</span></h1><span class="context">WPS 公式编辑器</span><span class="spacer"></span><span id="target"></span><button id="assistantToggle" type="button" aria-controls="assistantDock" aria-expanded="false">AI 助手</button><button id="closeButton" class="quiet icon-button" type="button" aria-label="关闭编辑器" title="关闭">×</button></header>
+<main class="editor-shell">
 <section id="editor" hidden>
-  <div class="editor-scroll">
-  <div class="row"><label>编译引擎 <select id="engine"><option value="xelatex">XeLaTeX · 支持中文</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label><label>输出 <select id="output"><option value="svg">SVG 矢量 · 放大清晰</option><option value="png">PNG 透明图片</option></select></label><label id="sizeLabel">字号 <input id="pointSize" aria-label="字号（pt）" title="记住手动选择的字号，下次新建时使用" type="number" min="4" max="200" step="0.5" value="18">pt</label><span id="target"></span></div>
-  <div class="row" id="sizeModeRow" hidden><label>更新尺寸 <select id="sizeMode"><option value="font">按字号重设尺寸</option><option value="height">保留高度 · 宽度随内容变化</option><option value="frame">固定原宽高 · 可能拉伸文字</option></select></label></div>
-  <p class="note" id="sizeHint">字号范围 4–200 pt；使用 IguanaTex 的 10 pt 模板缩放规则。</p>
-  <div id="chatPanel"></div>
-  <label class="source-label" for="source">完整 LaTeX 源码 <span>完整文档 · 宏包、命令与正文均可编辑</span></label>
-  <textarea id="source" spellcheck="false" aria-label="LaTeX 源码"></textarea>
-  <div class="templates"><span>插入示例</span><button data-template="sum">求和</button><button data-template="matrix">矩阵</button><button data-template="aligned">多行公式</button><button data-template="chinese">中文标注</button></div>
-  <p class="note" id="editNote">图形和完整源码一起保存在 PPTX 中。SVG 使用字形轮廓，不依赖接收方安装 LaTeX 字体。插入后请在 WPS 中保存文档。</p>
+  <div class="editor-tools">
+    <label id="sizeLabel">字号 <input id="pointSize" aria-label="字号（pt）" title="记住手动选择的字号，下次新建时使用" type="number" min="4" max="200" step="0.5" value="18">pt</label>
+    <span class="tool-divider"></span>
+    <label><span class="tool-label">引擎</span><select id="engine" aria-label="编译引擎"><option value="xelatex">XeLaTeX</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label>
+    <label><span class="tool-label">输出</span><select id="output" aria-label="输出格式"><option value="svg">SVG 矢量</option><option value="png">PNG 图片</option></select></label>
+    <span class="spacer"></span>
+    <details class="popover" id="editorSettings"><summary>更多设置</summary><div class="popover-content">
+      <div id="sizeModeRow" hidden><label>更新尺寸<select id="sizeMode"><option value="font">按字号重设尺寸</option><option value="height">保留高度</option><option value="frame">固定原宽高 · 可能拉伸</option></select></label></div>
+      <p class="note" id="sizeHint"></p><h2>保存与兼容性</h2><p class="note" id="editNote">公式和完整源码一起保存在 PPTX 中。插入后请在 WPS 中保存文档。</p>
+    </div></details>
   </div>
-  <div class="editor-footer">
-  <div id="preview"><span id="previewHint">点击“预览”检查排版</span><img id="formulaImage" alt="公式预览" hidden></div>
-  <p class="note" id="previewSize" hidden></p>
-  <div class="actions"><button id="previewButton">预览 <kbd>Ctrl + Enter</kbd></button><button id="applyButton" class="primary">插入当前幻灯片</button></div>
+  <div class="work-area">
+    <div class="formula-pane">
+      <div class="source-head"><label for="source">LaTeX 源码</label><span class="source-caption" title="完整文档，宏包、命令与正文均可编辑">.tex · 完整文档</span><span class="spacer"></span><details class="popover templates-menu"><summary>插入示例</summary><div class="popover-content"><button data-template="sum">求和</button><button data-template="matrix">矩阵</button><button data-template="aligned">多行公式</button><button data-template="chinese">中文标注</button></div></details></div>
+      <textarea id="source" spellcheck="false" aria-label="完整 LaTeX 源码"></textarea>
+      <div class="preview-pane"><div class="preview-head"><strong>预览</strong><span id="previewSize" hidden></span></div><div id="preview" class="preview-canvas"><span id="previewHint">Ctrl / ⌘ + Enter 编译预览</span><img id="formulaImage" alt="公式预览" hidden></div></div>
+    </div>
+    <aside id="assistantDock" class="assistant-dock" aria-label="AI 助手" hidden><div class="dock-heading">AI 助手 <span>DeepSeek</span><span class="spacer"></span><button id="assistantClose" class="quiet icon-button" aria-label="收起 AI 助手" title="收起">×</button></div><div id="chatPanel"></div></aside>
   </div>
 </section>
 <section id="help" hidden>
@@ -32,4 +35,6 @@
 </section>
 <section id="protect" hidden><h2>检查与同步源码</h2><p>以 IguanaTex 原生标签为准更新备份；原生标签丢失时尝试从替代文字恢复。完成后请保存 PPTX。</p><button id="protectButton" class="primary">检查当前演示文稿</button><pre id="protectResult"></pre></section>
 <details id="errorDetails" hidden><summary>详细信息</summary><pre id="errorText"></pre></details>
-</main><script src="/shared/latex.js"></script><script src="/shared/chat.js"></script><script src="adapter.js"></script><script src="editor.js"></script></body></html>
+
+<div class="actionbar"><div id="status" role="status" aria-live="polite">正在连接 WPS…</div><div class="actions" id="formulaActions"><button id="previewButton">预览 <kbd>Ctrl ↵</kbd></button><button id="applyButton" class="primary">插入当前幻灯片</button></div></div>
+</main><script src="/shared/latex.js"></script><script src="/shared/chat.js"></script><script src="adapter.js"></script><script src="editor.js"></script><script src="/shared/workspace.js"></script></body></html>

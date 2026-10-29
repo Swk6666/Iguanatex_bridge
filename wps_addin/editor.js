@@ -98,7 +98,7 @@
         finally { busy = false; document.querySelectorAll('button, textarea, select, input').forEach(function (e) { e.disabled = false; }); }
     }
     var chat = window.IguanaChat ? window.IguanaChat.mount($('chatPanel'), {api: api, source: $('source'),
-        collapsed: true,
+        collapsed: false, docked: true,
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); },
         canStart: function () { return !busy; }, onSource: function () { preview = null; $('previewSize').hidden = true; }}) : null;
     $('previewButton').onclick = function () { return run(renderFormula); };
@@ -134,7 +134,7 @@
     }); };
     async function init() {
         if (mode === 'help') {
-            $('help').hidden = false; status('IguanaTex Bridge 0.5.2 · 本地 WPS 加载项');
+            $('help').hidden = false; status('IguanaTex Bridge 0.6.0 · 本地 WPS 加载项');
             var info = await api('doctor'); $('doctor').textContent = JSON.stringify(info, null, 2); return;
         }
         if (mode === 'protect') { $('protect').hidden = false; status('准备检查当前演示文稿中的公式源码。'); return; }
@@ -162,5 +162,10 @@
         }
         sizeHint();
     }
-    init().catch(function (e) { $('editor').hidden = true; failure(e); });
+    init().catch(function (e) {
+        $('editor').hidden = true;
+        $('formulaActions').hidden = true;
+        $('assistantToggle').hidden = true;
+        failure(e);
+    });
 }());
