@@ -27,6 +27,7 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
             const box=layout(c,d);replacements.push({mode:c.sizeMode,width:box.width,height:box.height});
             c.shape={Id:2,Width:box.width,Height:box.height,Left:box.left,Top:box.top};
         }}};
+    if(options.chat)sandbox.window.IguanaChat={mount(){return {isBusy(){return false;},ask(t){options.chat.push(t);}};},compileReport:info=>info};
     vm.runInNewContext(fs.readFileSync('shared/latex.js','utf8'),sandbox);
     sandbox.IguanaLatex=sandbox.window.IguanaLatex;
     vm.runInNewContext(fs.readFileSync('wps_addin/editor.js','utf8'),sandbox);
@@ -147,5 +148,17 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
         f.state.failRender=false;await f.get('previewButton').onclick();
         assert.equal(f.get('formulaImage').hidden,false);assert.equal(f.get('errorDetails').hidden,true);
     }
-    console.log('11 WPS editor interaction tests passed');
+    {
+        const asked=[];const f=await fixture(true,'x',true,{chat:asked});
+        await f.get('previewButton').onclick();
+        assert.equal(f.get('aiFix').hidden,false,'a LaTeX failure offers to ask the AI');
+        await f.get('aiFix').onclick();
+        assert.match(asked[0].message,/unknown command/);assert.equal(asked[0].engine,'xelatex');assert.match(asked[0].source,/documentclass/);
+        f.get('source').oninput();assert.equal(f.get('aiFix').hidden,true,'editing invalidates the captured log');
+        f.get('pointSize').value='0';await f.get('previewButton').onclick();
+        assert.equal(f.get('aiFix').hidden,true,'local validation errors are not compiler logs');
+        f.get('pointSize').value='18';f.state.failRender=false;await f.get('previewButton').onclick();
+        assert.equal(f.get('aiFix').hidden,true);
+    }
+    console.log('12 WPS editor interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

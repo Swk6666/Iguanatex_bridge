@@ -19,7 +19,10 @@
         aligned: '\\begin{aligned}\nM(q)\\ddot q+C(q,\\dot q)\\dot q+g(q)&=\\tau,\\\\\nA x&=b.\n\\end{aligned}',
         chinese: '\\underbrace{M(q)\\ddot q}_{\\text{惯性项}}+g(q)=\\tau'};
     function status(message, error) { $('status').textContent = message; $('status').className = error ? 'error' : ''; }
-    function failure(e) { status(e.message.split('\n')[0], true); $('errorDetails').hidden = false; $('errorText').textContent = e.stack || String(e); }
+    function failure(e) {
+        // TeX logs are long; surface the first "!" error line next to the headline.
+        var first = e.message.split('\n')[0], bang = e.message.match(/^! .*$/m);
+        status(bang && bang[0] !== first ? first + ' ' + bang[0] : first, true); $('errorDetails').hidden = false; $('errorText').textContent = e.compile ? e.message : e.stack || String(e); }
     async function api(path, data, retried) {
         if (!token) {
             var session = await fetch('/api/session?now=' + Date.now(), {cache: 'no-store'});
@@ -31,6 +34,10 @@
         if (!response.ok) throw new Error(result.error || '本地服务不可用，请运行启动脚本。');
         return result;
     }
+    // Server-side LaTeX failures can be handed to the AI assistant with one click.
+    var compileError = null;
+    function compileApi(path, data) { return api(path, data).catch(function (e) { e.compile = true; throw e; }); }
+    function setCompileError(info) { compileError = info; $('aiFix').hidden = !info || !chat; }
     function key() { return JSON.stringify([$('source').value, $('engine').value, $('pointSize').value, $('output').value]); }
     function clearPreview(message) {
         preview = null; previewKey = '';
@@ -38,7 +45,7 @@
         $('previewSize').hidden = true; $('previewSize').textContent = '';
         $('previewHint').hidden = false; $('previewHint').textContent = message;
     }
-    function previewChanged() { clearPreview('内容或设置已修改，请重新预览。'); }
+    function previewChanged() { setCompileError(null); clearPreview('内容或设置已修改，请重新预览。'); }
     $('source').oninput = previewChanged;
     $('engine').onchange = previewChanged;
     $('output').onchange = previewChanged;
@@ -89,32 +96,48 @@
         try {
             var pointSize = Number($('pointSize').value);
             if (!isFinite(pointSize) || pointSize < 4 || pointSize > 200) throw new Error('字号须在 4–200 pt 之间。');
-            await IguanaLatex.prepare($('source'), api);
+            setCompileError(null);
+            await IguanaLatex.prepare($('source'), compileApi);
             var requestKey = key();
             if (preview && previewKey === requestKey) { showPreview(preview); return preview; }
             clearPreview('正在编译当前源码…');
             status('正在使用本机 LaTeX 编译…');
-            var result = await api('wps/render', {source: $('source').value, engine: $('engine').value,
+            var result = await compileApi('wps/render', {source: $('source').value, engine: $('engine').value,
                 point_size: pointSize, output: $('output').value, alt: ctx && ctx.original ? ctx.original.alt : ''});
             if (key() !== requestKey) throw new Error('源码已变更，请重新预览。');
             preview = result; previewKey = requestKey;
             showPreview(result);
             status('预览已生成，可以写入幻灯片。');
             return result;
-        } catch (e) { clearPreview('编译未完成，请修正源码或设置后重新预览。'); throw e; }
+        } catch (e) {
+            clearPreview('编译未完成，请修正源码或设置后重新预览。');
+            if (e.compile) setCompileError({source: $('source').value, engine: $('engine').value, message: e.message});
+            throw e;
+        }
+    }
+    function lock(disabled) {
+        // The AI panel manages its own controls; its prompt must stay typable while compiling.
+        document.querySelectorAll('button, textarea, select, input').forEach(function (e) {
+            if (!(e.closest && e.closest('.chat-panel'))) e.disabled = disabled;
+        });
     }
     async function run(action) {
         if (busy || chat && chat.isBusy()) return;
         busy = true; $('errorDetails').hidden = true;
-        document.querySelectorAll('button, textarea, select, input').forEach(function (e) { e.disabled = true; });
+        lock(true);
         try { await action(); } catch (e) { failure(e); }
-        finally { busy = false; document.querySelectorAll('button, textarea, select, input').forEach(function (e) { e.disabled = false; }); }
+        finally { busy = false; lock(false); }
     }
     var chat = window.IguanaChat ? window.IguanaChat.mount($('chatPanel'), {api: api, source: $('source'),
         collapsed: false, docked: true,
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); },
         canStart: function () { return !busy; }, onSource: previewChanged}) : null;
     $('previewButton').onclick = function () { return run(renderFormula); };
+    $('aiFix').onclick = function () {
+        if (!compileError || !chat) return;
+        if ($('assistantDock').hidden) $('assistantToggle').click();
+        return chat.ask(window.IguanaChat.compileReport(compileError));
+    };
     $('applyButton').onclick = function () { return run(async function () {
         if (!ctx) throw new Error('未连接 WPS，请从 IguanaTex 功能区重新打开。');
         IguanaWps.validate(ctx);
@@ -127,7 +150,7 @@
         status('公式已写入第 ' + ctx.slide.SlideIndex + ' 页。请在 WPS 中保存 PPTX。');
         window.close();
     }); };
-    document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(renderFormula); } });
+    document.addEventListener('keydown', function (e) { if (!e.isComposing && (e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(renderFormula); } });
     document.querySelectorAll('[data-template]').forEach(function (button) { button.onclick = function () {
         var field = $('source'), snippet = templates[button.dataset.template];
         field.setRangeText(snippet, field.selectionStart, field.selectionEnd, 'end'); field.focus();

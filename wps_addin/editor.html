@@ -2,39 +2,39 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IguanaTex 公式编辑器</title><link rel="stylesheet" href="/shared/workspace.css"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="/shared/chat.css"></head>
 <body>
-<header class="app-header"><div class="mark" aria-hidden="true">∑</div><h1>IguanaTex <span>Bridge</span></h1><span class="context">WPS 公式编辑器</span><span class="spacer"></span><span id="target"></span><button id="assistantToggle" type="button" aria-controls="assistantDock" aria-expanded="false">AI 助手</button><button id="closeButton" class="quiet icon-button" type="button" aria-label="关闭编辑器" title="关闭">×</button></header>
+<header class="app-header"><div class="mark" aria-hidden="true">∑</div><h1>IguanaTex <span>Bridge</span></h1><span class="context">WPS 公式编辑器</span><span class="spacer"></span><span id="target"></span><button id="assistantToggle" type="button" aria-controls="assistantDock" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.8 4.8 1.9-4.8 1.9L12 16.9l-1.9-4.8-4.8-1.9 4.8-1.9z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>AI 助手</button><button id="closeButton" class="quiet icon-button" type="button" aria-label="关闭编辑器" title="关闭"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
 <main class="editor-shell">
 <section id="editor" hidden>
   <div class="editor-tools">
-    <label id="sizeLabel">字号 <input id="pointSize" aria-label="字号（pt）" title="记住手动选择的字号，下次新建时使用" type="number" min="4" max="200" step="0.5" value="18">pt</label>
-    <span class="tool-divider"></span>
+    <label id="sizeLabel"><span class="tool-label">字号</span><input id="pointSize" aria-label="字号（pt）" title="记住手动选择的字号，下次新建时使用" type="number" min="4" max="200" step="0.5" value="18"><span class="field-unit">pt</span></label>
     <label><span class="tool-label">引擎</span><select id="engine" aria-label="编译引擎"><option value="xelatex">XeLaTeX</option><option value="pdflatex">pdfLaTeX</option><option value="lualatex">LuaLaTeX</option></select></label>
     <label><span class="tool-label">输出</span><select id="output" aria-label="输出格式"><option value="svg">SVG 矢量</option><option value="png">PNG 图片</option></select></label>
     <span class="spacer"></span>
-    <details class="popover" id="editorSettings"><summary>更多设置</summary><div class="popover-content">
+    <details class="popover" id="editorSettings"><summary><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>更多设置</summary><div class="popover-content">
       <div id="sizeModeRow" hidden><label>更新尺寸<select id="sizeMode"><option value="font">按字号重设尺寸</option><option value="height">保留高度</option><option value="frame">固定原宽高 · 可能拉伸</option></select></label></div>
       <p class="note" id="sizeHint"></p><h2>保存与兼容性</h2><p class="note" id="editNote">公式和完整源码一起保存在 PPTX 中。插入后请在 WPS 中保存文档。</p>
     </div></details>
   </div>
   <div class="work-area">
     <div class="formula-pane">
-      <div class="source-head"><label for="source">LaTeX 源码</label><span class="source-caption" title="完整文档，宏包、命令与正文均可编辑">.tex · 完整文档</span><span class="spacer"></span><details class="popover templates-menu"><summary>插入示例</summary><div class="popover-content"><button data-template="sum">求和</button><button data-template="matrix">矩阵</button><button data-template="aligned">多行公式</button><button data-template="chinese">中文标注</button></div></details></div>
-      <textarea id="source" spellcheck="false" aria-label="完整 LaTeX 源码"></textarea>
+      <div class="source-head"><label for="source">formula.tex</label><span class="source-caption" title="完整文档，宏包、命令与正文均可编辑">完整文档 · 可编辑导言区</span><span class="spacer"></span><details class="popover templates-menu"><summary>插入示例</summary><div class="popover-content"><button data-template="sum">求和<code>\sum</code></button><button data-template="matrix">矩阵<code>bmatrix</code></button><button data-template="aligned">多行公式<code>aligned</code></button><button data-template="chinese">中文标注<code>\text</code></button></div></details></div>
+      <div class="code-editor"><pre class="code-gutter" aria-hidden="true"></pre><textarea id="source" spellcheck="false" wrap="off" aria-label="完整 LaTeX 源码"></textarea></div>
+      <div class="pane-splitter" role="separator" aria-orientation="horizontal" aria-label="调整预览高度" title="拖动调整预览高度，双击恢复" tabindex="0"></div>
       <div class="preview-pane"><div class="preview-head"><strong>预览</strong><span id="previewSize" hidden></span></div><div id="preview" class="preview-canvas"><span id="previewHint">Ctrl / ⌘ + Enter 编译预览</span><img id="formulaImage" alt="公式预览" hidden></div></div>
     </div>
-    <aside id="assistantDock" class="assistant-dock" aria-label="AI 助手" hidden><div class="dock-heading">AI 助手 <span>DeepSeek</span><span class="spacer"></span><button id="assistantClose" class="quiet icon-button" aria-label="收起 AI 助手" title="收起">×</button></div><div id="chatPanel"></div></aside>
+    <aside id="assistantDock" class="assistant-dock" aria-label="AI 助手" hidden><div class="dock-heading"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.8 4.8 1.9-4.8 1.9L12 16.9l-1.9-4.8-4.8-1.9 4.8-1.9z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>AI 助手 <span>DeepSeek</span><span class="spacer"></span><button id="assistantClose" class="quiet icon-button" aria-label="收起 AI 助手" title="收起"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div id="chatPanel"></div></aside>
   </div>
 </section>
-<section id="help" hidden>
-  <h2>从这里开始</h2><ol><li>在 WPS 的 IguanaTex 功能区点击“新建公式”。</li><li>输入 LaTeX，预览后插入当前幻灯片。</li><li>选中公式图片、SVG 或 IguanaTex Shape 组合，点击“编辑选中公式”。</li></ol>
-  <h2>Windows / Mac 的 PowerPoint</h2><p>安装 IguanaTex 后，打开同一份 PPTX，选中公式，使用 Edit LaTeX display → ReGenerate。返回 WPS 后可继续编辑。</p>
+<section id="help" class="doc-page" hidden>
+  <div class="doc-card"><h2>从这里开始</h2><ol class="steps"><li>在 WPS 的 IguanaTex 功能区点击“新建公式”。</li><li>输入 LaTeX，预览后插入当前幻灯片。</li><li>选中公式图片、SVG 或 IguanaTex Shape 组合，点击“编辑选中公式”。</li></ol></div>
+  <div class="doc-card"><h2>Windows / Mac 的 PowerPoint</h2><p>安装 IguanaTex 后，打开同一份 PPTX，选中公式，使用 Edit LaTeX display → ReGenerate。返回 WPS 后可继续编辑。</p>
   <p>更新公式默认“按字号重设尺寸”，与 IguanaTex 的 Reset size 一样按 10 pt 模板缩放，宽高按当前字号和内容重新计算，保持自然比例。需要沿用原高度时可手动选择“保留高度”。需要严格固定占位时才选择“固定原宽高”，内容比例变化时文字会被拉伸。</p>
   <p>交接前点击“检查与同步源码”，将最新原生标签同步到源码备份。Windows / Mac 的实际 Office 往返仍需在对应设备验证。</p>
-  <h2>本机环境</h2><pre id="doctor">正在检查…</pre>
-  <p class="note">Shape 公式可直接读取并更新为 SVG 矢量图形，无需 Convert to Picture。SVG 可继续通过 LaTeX 编辑，但不会保留原来逐字拆分的 Shape 结构。更新保留位置、旋转、翻转和层叠顺序，默认按字号重设宽高；动画、手动字形配色、特效与交互动作需要重新设置。包含多个公式或其他内容的排版组合，请先取消外层组合。</p>
+  <p class="note">Shape 公式可直接读取并更新为 SVG 矢量图形，无需 Convert to Picture。SVG 可继续通过 LaTeX 编辑，但不会保留原来逐字拆分的 Shape 结构。更新保留位置、旋转、翻转和层叠顺序，默认按字号重设宽高；动画、手动字形配色、特效与交互动作需要重新设置。包含多个公式或其他内容的排版组合，请先取消外层组合。</p></div>
+  <div class="doc-card"><h2>本机环境</h2><pre id="doctor">正在检查…</pre></div>
 </section>
-<section id="protect" hidden><h2>检查与同步源码</h2><p>以 IguanaTex 原生标签为准更新备份；原生标签丢失时尝试从替代文字恢复。完成后请保存 PPTX。</p><button id="protectButton" class="primary">检查当前演示文稿</button><pre id="protectResult"></pre></section>
+<section id="protect" class="doc-page" hidden><div class="doc-card"><h2>检查与同步源码</h2><p>以 IguanaTex 原生标签为准更新备份；原生标签丢失时尝试从替代文字恢复。完成后请保存 PPTX。</p><button id="protectButton" class="primary">检查当前演示文稿</button><pre id="protectResult"></pre></div></section>
 <details id="errorDetails" hidden><summary>详细信息</summary><pre id="errorText"></pre></details>
 
-<div class="actionbar"><div id="status" role="status" aria-live="polite">正在连接 WPS…</div><div class="actions" id="formulaActions"><button id="previewButton">预览 <kbd>Ctrl ↵</kbd></button><button id="applyButton" class="primary">插入当前幻灯片</button></div></div>
+<div class="actionbar"><div id="status" role="status" aria-live="polite">正在连接 WPS…</div><div class="actions" id="formulaActions"><button id="aiFix" class="ai-fix" type="button" title="把编译错误日志和当前源码发送给 AI 助手分析" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 4.8 4.8 1.9-4.8 1.9L12 16.9l-1.9-4.8-4.8-1.9 4.8-1.9z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>发给 AI 分析</button><button id="previewButton"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>预览 <kbd>Ctrl ↵</kbd></button><button id="applyButton" class="primary">插入当前幻灯片</button></div></div>
 </main><script src="/shared/latex.js"></script><script src="/shared/chat.js"></script><script src="adapter.js"></script><script src="editor.js"></script><script src="/shared/workspace.js"></script></body></html>

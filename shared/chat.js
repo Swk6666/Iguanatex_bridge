@@ -1,22 +1,25 @@
 /* Shared DeepSeek chat. Only an explicit Send uploads text/images. */
 (function (root) {
     'use strict';
+    function icon(paths) {
+        return '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' + paths + '</svg>';
+    }
     function mount(container, options) {
         container.classList.add('chat-panel');
         var wrapper = options.docked ? 'div' : 'details';
         container.innerHTML = '<' + wrapper + ' class="chat-main"' + (options.docked || options.collapsed ? '' : ' open') + '>' +
             (options.docked ? '' : '<summary>AI 对话 · DeepSeek API</summary>') + '<div class="chat-body">' +
-            '<div class="chat-toolbar"><button type="button" data-action="new" title="开始不携带旧内容的对话">新对话</button><button type="button" data-action="refresh">刷新对话</button>' +
-            '<details class="chat-settings"><summary>API 设置</summary><div class="chat-settings-body"><p class="chat-config-status">正在读取…</p>' +
+            '<div class="chat-toolbar"><button type="button" data-action="new" title="开始不携带旧内容的对话">' + icon('<path d="M12 5v14M5 12h14"/>') + '新对话</button><button type="button" data-action="refresh" title="从本机服务重新读取对话">' + icon('<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>') + '刷新</button>' +
+            '<details class="chat-settings"><summary>' + icon('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>') + 'API 设置</summary><div class="chat-settings-body"><p class="chat-config-status">正在读取…</p>' +
             '<label>DeepSeek API Key<input class="chat-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="已保存时留空即可"></label>' +
             '<label>模型<input class="chat-model" type="text" spellcheck="false" value="deepseek-flash" maxlength="128"></label>' +
             '<p class="chat-note">密钥仅保存在本机，不写入 PPTX 或 Git。<a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">获取 API Key</a></p>' +
             '<div class="chat-actions"><button type="button" data-action="save">保存设置</button><button type="button" data-action="clear-key">删除本机密钥</button></div></div></details></div>' +
             '<div class="chat-history" role="region" aria-label="DeepSeek 对话记录"></div>' +
-            '<div class="chat-composer"><label class="chat-prompt-label">发送给 DeepSeek<textarea class="chat-prompt" rows="3" maxlength="8000" spellcheck="false" placeholder="描述公式，或附图让 AI 识别…"></textarea></label>' +
+            '<div class="chat-composer"><div class="chat-box"><label class="chat-prompt-label"><span class="chat-sr">发送给 DeepSeek</span><textarea class="chat-prompt" rows="3" maxlength="8000" spellcheck="false" placeholder="描述公式，或附图让 AI 识别…"></textarea></label>' +
             '<div class="chat-image" tabindex="0" aria-label="图片拖放区"><span>拖入或粘贴图片 · ≤10 MB</span><img alt="待发送的图片" hidden></div>' +
-            '<div class="chat-actions"><label class="chat-file">＋ 图片<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="选择图片"></label><button type="button" data-action="remove" hidden>移除图片</button>' +
-            '<button class="chat-send" type="button" data-action="send" title="Ctrl / ⌘ + Enter 发送">发送</button><button type="button" data-action="cancel" hidden>停止等待</button></div>' +
+            '<div class="chat-actions"><label class="chat-file" title="选择 PNG、JPEG 或 WebP 图片">' + icon('<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8.5 8.5"/>') + '图片<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="选择图片"></label><button type="button" data-action="remove" hidden>移除图片</button>' +
+            '<span class="chat-hint">Ctrl ↵</span><button class="chat-send" type="button" data-action="send" title="Ctrl / ⌘ + Enter 发送">发送</button><button type="button" data-action="cancel" hidden>停止等待</button></div></div>' +
             '<p class="chat-note chat-disclosure">文字与图片发送至 DeepSeek，按 API 用量计费。</p>' +
             '<p class="chat-status" role="status" aria-live="polite"></p></div></div></' + wrapper + '>';
         var q = function (s) { return container.querySelector(s); };
@@ -34,7 +37,8 @@
         }
         function setBusy(value) {
             active = value;
-            container.querySelectorAll('button,input,textarea').forEach(function (e) { e.disabled = value || loading; });
+            // The prompt stays editable: disabling it mid-composition breaks Chinese IMEs on Linux Chromium.
+            container.querySelectorAll('button,input').forEach(function (e) { e.disabled = value || loading; });
             action('cancel').hidden = !jobId; action('cancel').disabled = !jobId;
         }
         function showConfig(config) {
@@ -100,7 +104,7 @@
             lastHistory = signature;
             var follow = history.scrollTop + history.clientHeight >= history.scrollHeight - 40;
             if (!data.turns.length) {
-                history.replaceChildren(node('p', 'chat-empty', '识别截图、修改公式或解释符号。\n回答中的 LaTeX 可一键采用。\n\n对话在本次服务运行期间保留。'));
+                history.replaceChildren(node('p', 'chat-empty', '识别截图、修改公式或解释符号\n回答中的 LaTeX 可一键采用\n\n对话在本次服务运行期间保留'));
                 rows = {}; return;
             }
             if (!Object.keys(rows).length) history.replaceChildren();
@@ -120,11 +124,11 @@
                 if (row.terminal || ['succeeded', 'failed', 'cancelled'].indexOf(turn.status) < 0) return;
                 row.terminal = true;
                 if (turn.answer) {
-                    var copyButton = node('button', '', '复制完整回答'); copyButton.type = 'button';
+                    var copyButton = node('button', 'chat-copy', '复制完整回答'); copyButton.type = 'button';
                     copyButton.onclick = function () { return copy(turn.answer); }; row.actions.appendChild(copyButton);
                 } else { row.answer.textContent = '尚未收到回答。'; }
                 if (turn.status === 'succeeded') (turn.latex_blocks || []).forEach(function (source, i) {
-                    var use = node('button', '', '采用 LaTeX' + (turn.latex_blocks.length > 1 ? ' ' + (i + 1) : ''));
+                    var use = node('button', 'chat-adopt', '采用 LaTeX' + (turn.latex_blocks.length > 1 ? ' ' + (i + 1) : ''));
                     use.type = 'button'; use.onclick = function () { return adopt(source); }; row.actions.appendChild(use);
                 });
             });
@@ -154,15 +158,19 @@
             finally { setBusy(false); }
         }
         async function send() {
-            if (!mayStart()) return;
+            if (!mayStart()) {
+                status(active || loading ? '请等待当前操作完成后再发送，草稿已保留。' : '编辑器正在编译或写入，请稍后再发送。');
+                return;
+            }
             if (!configured) { q('.chat-settings').open = true; status('请先填写并保存 DeepSeek API Key。'); return; }
             if (!prompt.value.trim() && !chosen) { status('请输入文字或选择一张图片。'); return; }
             setBusy(true); status('正在发送到 DeepSeek…');
+            var sent = prompt.value;
             try {
                 var job = await options.api('chat/start', {message: prompt.value, data: chosen ? await readFile(chosen) : null,
                     conversation_id: conversation.conversation_id, revision: conversation.revision});
                 conversation.conversation_id = job.conversation_id; saveConversation(job.conversation_id);
-                if (await poll(job.id) === 'succeeded') { prompt.value = ''; removeImage(); }
+                if (await poll(job.id) === 'succeeded') { if (prompt.value === sent) prompt.value = ''; removeImage(); }
             } catch (e) { status(e.message + ' 可点击“刷新对话”恢复状态。'); }
             finally { setBusy(false); }
         }
@@ -198,6 +206,7 @@
             if (files && files.length && mayStart()) { e.preventDefault(); select(files[0]); }
         });
         container.addEventListener('keydown', function (e) {
+            if (e.isComposing || e.keyCode === 229) return;
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault(); e.stopPropagation();
                 if (e.target === prompt) send();
@@ -216,7 +225,32 @@
             } catch (e) { status(e.message); }
             finally { loading = false; setBusy(false); }
         }());
-        return {isBusy: function () { return active; }, ready: ready};
+        async function ask(text) {
+            if (!mayStart()) { status('请等待当前操作完成后再发送。'); return; }
+            prompt.value = text;
+            return send();
+        }
+        return {isBusy: function () { return active; }, ready: ready, ask: ask};
     }
-    root.IguanaChat = {mount: mount};
+    function clip(text, limit) {
+        if (text.length <= limit) return text;
+        var head = Math.floor(limit * 0.6);
+        return text.slice(0, head) + '\n…（中间省略 ' + (text.length - limit) + ' 字符）…\n' + text.slice(text.length - (limit - head));
+    }
+    // The part of a TeX log a reader needs: the first "!" error with its context, else the tail.
+    function excerpt(log) {
+        var lines = String(log || '').replace(/^LaTeX 编译失败：\n?/, '').split(/\r?\n/);
+        var first = -1;
+        for (var i = 0; i < lines.length; i++) if (/^! /.test(lines[i])) { first = i; break; }
+        var picked = first >= 0 ? lines.slice(Math.max(0, first - 3), first + 20) : lines.slice(-40);
+        return clip(picked.join('\n').trim(), 2500);
+    }
+    var ENGINES = {xelatex: 'XeLaTeX', pdflatex: 'pdfLaTeX', lualatex: 'LuaLaTeX'};
+    function compileReport(info) {
+        var header = '预览编译失败（引擎：' + (ENGINES[info.engine] || info.engine) + '）。请根据错误日志说明原因，并给出修正后的完整 LaTeX 文档。';
+        var log = excerpt(info.message);
+        var room = 7600 - header.length - log.length;
+        return header + '\n\n错误日志：\n```text\n' + log + '\n```\n\n当前源码：\n```latex\n' + clip(String(info.source || '').trim(), Math.max(800, room)) + '\n```';
+    }
+    root.IguanaChat = {mount: mount, compileReport: compileReport};
 }(typeof window !== 'undefined' ? window : globalThis));

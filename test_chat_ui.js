@@ -121,5 +121,29 @@ const button=(f,label)=>f.created.find(e=>e.textContent===label&&typeof e.onclic
         f.container.events.keydown({ctrlKey:true,key:'Enter',target:f.element('panel .chat-key'),preventDefault(){},stopPropagation(){stopped=true;}});
         assert(stopped);assert.equal(f.calls.filter(c=>c[0]==='chat/start').length,0);
     });
+    await test(async()=>{
+        const f=await fixture({onStatus:async({element})=>{element('panel .chat-prompt').value='等待时输入的草稿';}});
+        f.prompt('第一个问题');await f.click('send');
+        assert.equal(f.element('panel .chat-prompt').value,'等待时输入的草稿','a draft typed while waiting must survive');
+    });
+    await test(async()=>{
+        const f=await fixture();f.prompt('不应发送');
+        f.container.events.keydown({ctrlKey:true,key:'Enter',isComposing:true,target:f.element('panel .chat-prompt'),preventDefault(){},stopPropagation(){}});
+        assert.equal(f.calls.filter(c=>c[0]==='chat/start').length,0,'Ctrl+Enter during IME composition must not send');
+        f.setCanStart(false);await f.click('send');
+        assert.match(f.element('panel .chat-status').textContent,/稍后再发送/);
+        f.setCanStart(true);await f.controller.ask('修复这个错误');
+        assert.equal(f.calls.find(c=>c[0]==='chat/start')[1].message,'修复这个错误');
+    });
+    await test(async()=>{
+        const sb={};vm.runInNewContext(fs.readFileSync('shared/chat.js','utf8'),sb);const report=sb.IguanaChat.compileReport;
+        const log='LaTeX 编译失败：\n'+Array.from({length:200},(_,i)=>'(noise line '+i+')').join('\n')+
+            '\n! Undefined control sequence.\nl.12 \\fracc\n'+Array.from({length:200},(_,i)=>'tail '+i).join('\n');
+        const text=report({source:'\\documentclass{article}\n'+'x'.repeat(20000),engine:'xelatex',message:log});
+        assert.match(text,/XeLaTeX/);assert.match(text,/! Undefined control sequence\./);assert.match(text,/l\.12/);
+        assert.doesNotMatch(text,/noise line 10\)/);assert.match(text,/documentclass/);
+        assert(text.length<=8000,'report must fit the 8000-character chat limit, got '+text.length);
+        assert.match(report({source:'x',engine:'pdflatex',message:'LaTeX 编译超过 50 秒；请检查源码。'}),/50 秒/);
+    });
     console.log(count+' DeepSeek chat UI tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -16,14 +16,20 @@
         if (!response.ok) throw new Error(result.error || '本地服务不可用。');
         return result;
     }
+    function lock(disabled) {
+        // The AI panel manages its own controls; its prompt must stay typable while compiling.
+        document.querySelectorAll('button,textarea,select,input').forEach(function (e) {
+            if (!(e.closest && e.closest('.chat-panel'))) e.disabled = disabled;
+        });
+    }
     async function run(fn) {
         if (busy || chat.isBusy()) return;
         busy = true;
-        document.querySelectorAll('button,textarea,select,input').forEach(function (e) { e.disabled = true; });
+        lock(true);
         try { await fn(); } catch (e) { status(e.message, true); }
         finally {
             busy = false;
-            document.querySelectorAll('button,textarea,select,input').forEach(function (e) { e.disabled = false; });
+            lock(false);
             $('apply').disabled = !ready || (mode === 'edit' && !target);
         }
     }
@@ -38,19 +44,24 @@
         $('formulaImage').hidden = true; $('formulaImage').src = '';
         $('previewHint').hidden = false; $('previewHint').textContent = message;
     }
-    function previewChanged() { clearPreview('内容或设置已修改，请重新预览。'); }
+    // Server-side LaTeX failures can be handed to the AI assistant with one click.
+    var compileError = null;
+    function compileApi(path, data) { return api(path, data).catch(function (e) { e.compile = true; throw e; }); }
+    function setCompileError(info) { compileError = info; $('aiFix').hidden = !info; }
+    function previewChanged() { setCompileError(null); clearPreview('内容或设置已修改，请重新预览。'); }
     $('source').oninput = previewChanged;
     $('engine').onchange = previewChanged;
     $('output').onchange = previewChanged;
     async function renderFormula() {
         try {
-            await IguanaLatex.prepare($('source'), api);
+            setCompileError(null);
+            await IguanaLatex.prepare($('source'), compileApi);
             var requestKey = key(), size = Number($('pointSize').value);
             if (!(size >= 4 && size <= 200)) throw new Error('字号须在 4–200 pt 之间。');
             if (!preview || previewKey !== requestKey) {
                 clearPreview('正在编译当前源码…');
                 status('正在本机编译公式…');
-                var result = await api('render', {source: $('source').value, engine: $('engine').value, output: $('output').value, point_size: size});
+                var result = await compileApi('render', {source: $('source').value, engine: $('engine').value, output: $('output').value, point_size: size});
                 if (key() !== requestKey) throw new Error('源码已变更，请重新预览。');
                 preview = result;
                 previewKey = requestKey;
@@ -59,7 +70,11 @@
             $('formulaImage').hidden = false; $('previewHint').hidden = true;
             status('预览已生成，请核对公式后写入。');
             return preview;
-        } catch (e) { clearPreview('编译未完成，请修正源码或设置后重新预览。'); throw e; }
+        } catch (e) {
+            clearPreview('编译未完成，请修正源码或设置后重新预览。');
+            if (e.compile) setCompileError({source: $('source').value, engine: $('engine').value, message: e.message});
+            throw e;
+        }
     }
     var chat = IguanaChat.mount($('chatPanel'), {api: api, source: $('source'), canStart: function () { return !busy; },
         collapsed: false, docked: true,
@@ -92,6 +107,11 @@
         if (previewKey !== key()) previewChanged();
     };
     $('previewButton').onclick = function () { return run(renderFormula); };
+    $('aiFix').onclick = function () {
+        if (!compileError) return;
+        if ($('assistantDock').hidden) $('assistantToggle').click();
+        return chat.ask(IguanaChat.compileReport(compileError));
+    };
     $('apply').onclick = function () { return run(async function () {
         if (!ready) throw new Error('尚未连接 PowerPoint。');
         if (mode === 'edit' && !target) throw new Error('请先选中并读取要修改的公式。');
