@@ -54,6 +54,6 @@ WPS 预览和插入／更新按钮仍固定在窗口底部，字号记忆及成�
 - **其他窗口已更新**：点击“刷新对话”，再继续发送。
 - **服务重启后对话过期**：开始新对话；LaTeX 源码仍保存在你写入并保存的 PPTX 中。
 
-本次接口协议和 UI 已用模拟服务测试，并实测回答采用后的本机 XeLaTeX 编译；真实 DeepSeek 账号调用仍需在配置有效密钥后验证。独立 Qt 桌面 GUI 仍沿用[网页识别模式](DEEPSEEK.md)，不使用此 API 面板。
+接口协议和 UI 已用模拟服务测试；0.5.1 已完成真实 DeepSeek 文字请求、完整 LaTeX 回传、采用及本机 XeLaTeX 编译。真实图片调用仍待验证。生成公式文档时要求加入 `\pagestyle{empty}`，避免页码把公式裁边撑成整页。独立 Qt 桌面 GUI 仍沿用[网页识别模式](DEEPSEEK.md)，不使用此 API 面板。
 
 接口依据（2026-10-29 核对）：[DeepSeek 图片输入](https://api-docs.deepseek.com/guides/vision/) · [Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/)。

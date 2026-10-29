@@ -1,5 +1,10 @@
 # 更新记录
 
+## 0.5.1 · 2026-10-29
+
+- AI 生成公式文档时明确要求加入 `\pagestyle{empty}`，避免页码让裁边覆盖整页、公式预览变小。
+- DeepSeek 真实账号已完成文字请求、完整 LaTeX 回传与本机编译验证。
+
 ## 0.5.0 · 2026-10-29
 
 - WPS、PowerPoint 加载项与浏览器编辑器默认改用 DeepSeek 官方 API，默认 deepseek-flash；无需浏览器登录或 Playwright。
