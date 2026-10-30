@@ -229,11 +229,18 @@ class OpenAIClient:
                     if time.monotonic() - last_update >= .15:
                         update(text); last_update = time.monotonic()
         except urllib.error.HTTPError as e:
+            code = ''
+            if e.code == 429:
+                try:
+                    details = json.loads(e.read(16384))
+                    code = details.get('error', {}).get('code', '')
+                except (ValueError, TypeError, AttributeError):
+                    pass
             errors = {401: 'API Key 无效或已失效，请重新配置 OpenAI API Key。',
                       402: 'OpenAI API 余额不足，请在开放平台充值后重试。',
                       403: '账号无权调用此接口，请检查 OpenAI 账号权限。',
                       404: '模型不存在或账号无权使用，请在 API 设置中修改模型。',
-                      429: 'API 请求受限或账户额度不足，请检查 OpenAI 用量和账单后重试。',
+                      429: 'OpenAI API 额度不足，请检查账单和额度。' if code == 'insufficient_quota' else 'OpenAI API 请求受限，请稍后重试。',
                       400: 'API 拒绝请求，请检查模型是否支持图片输入；默认使用 gpt-6-astra。',
                       422: 'API 参数不受支持，请检查模型设置。'}
             e.close()

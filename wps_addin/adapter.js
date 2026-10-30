@@ -88,12 +88,36 @@
             original: shape ? snapshot(shape) : null, sourceData: owner ? owner.data : null,
             structure: shape ? JSON.stringify(groupState(shape)) : null};
     }
+    function imageContexts() {
+        var application = app(), presentation = application.ActivePresentation;
+        if (!presentation || !presentation.Slides.Count) throw new Error('请先打开演示文稿并添加一页幻灯片。');
+        var slide = application.ActiveWindow.View.Slide, selection = application.ActiveWindow.Selection;
+        if (!slide || selection.Type !== 2 || !selection.ShapeRange.Count) throw new Error('请先选择一张或多张图片。');
+        if (selection.HasChildShapeRange) throw new Error('请先取消组合，再选择图片。');
+        var results = [];
+        for (var i = 1; i <= selection.ShapeRange.Count; i++) {
+            var shape = selection.ShapeRange.Item(i);
+            try {
+                if ([11, 13].indexOf(shape.Type) < 0) throw new Error('请选中未组合的图片。');
+                var original = snapshot(shape);
+                if (hasSource(original)) throw new Error('该对象已经是可编辑公式。');
+                var name = '';
+                try { name = String(presentation.FullName || presentation.Name || ''); } catch (ignored) { try { name = String(presentation.Name || ''); } catch (ignoredAgain) {} }
+                var ctx = {presentation: presentation, slide: slide, shape: shape, slideId: slide.SlideID,
+                    shapeId: shape.Id, original: original, sourceData: original,
+                    structure: JSON.stringify(groupState(shape)), imageGeometry: geometry(shape)};
+                ctx.identity = {presentation: name, slide_id: Number(ctx.slideId), shape_id: Number(ctx.shapeId)};
+                ctx.signature = JSON.stringify([ctx.structure, ctx.imageGeometry]);
+                results.push({ctx: ctx});
+            } catch (e) { results.push({error: e.message || '无法读取所选图片。'}); }
+        }
+        return results;
+    }
     function imageContext() {
-        var ctx = context(true);
-        if ([11, 13].indexOf(ctx.shape.Type) < 0) throw new Error('请选中一张未组合的图片，再点击“图片转公式”。');
-        if (hasSource(ctx.sourceData)) throw new Error('这已经是可编辑公式，请使用“编辑选中公式”。');
-        ctx.imageGeometry = geometry(ctx.shape);
-        return ctx;
+        var items = imageContexts();
+        if (items.length !== 1) throw new Error('请只选择一张图片。');
+        if (items[0].error) throw new Error(items[0].error);
+        return items[0].ctx;
     }
     function geometry(shape) {
         return JSON.stringify([shape.Left, shape.Top, shape.Width, shape.Height, shape.Rotation, shape.HorizontalFlip, shape.VerticalFlip]);
@@ -140,6 +164,8 @@
         // Font mode uses the absolute rendered size, just like IguanaTex Reset.
         // Do not silently shrink an oversized formula and change its font size.
         var left = old ? old.Left : (ctx.presentation.PageSetup.SlideWidth - width) / 2;
+        if (old && ctx.align === 'center') left += (old.Width - width) / 2;
+        if (old && ctx.align === 'right') left += old.Width - width;
         var top = old ? old.Top : (ctx.presentation.PageSetup.SlideHeight - height) / 2;
         return {width: width, height: height, left: left, top: top};
     }
@@ -183,6 +209,6 @@
         for (var page = 1; page <= presentation.Slides.Count; page++) walk(presentation.Slides.Item(page).Shapes, page);
         return result;
     }
-    root.IguanaWps = {context: context, imageContext: imageContext, exportImage: exportImage, validate: validate, tags: tags, snapshot: snapshot, stamp: stamp, layout: layout, replace: replace, formulas: formulas};
+    root.IguanaWps = {context: context, imageContext: imageContext, imageContexts: imageContexts, exportImage: exportImage, validate: validate, tags: tags, snapshot: snapshot, stamp: stamp, layout: layout, replace: replace, formulas: formulas};
     if (typeof module !== 'undefined') module.exports = root.IguanaWps;
 }(typeof window !== 'undefined' ? window : globalThis));

@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 from bridge import Deck, render, public_records, doctor
-from wps_support import WpsBridge
+from wps_support import WpsBridge, WpsWorkflow
 from ocr import OcrJobs
 from ai_chat import ChatJobs
 from latex_source import complete_source, replace_formula, DEFAULT_FORMULA
@@ -24,10 +24,12 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
     if owner:
         shared.update(state={'deck': None, 'name': 'formulas.pptx'}, lock=threading.Lock(),
                       token=secrets.token_urlsafe(32), renderer=WpsBridge(cache_dir),
-                      ocr=OcrJobs(**(ocr_options or {})), chat=ChatJobs(**(chat_options or {})))
+                      ocr=OcrJobs(**(ocr_options or {})), chat=ChatJobs(**(chat_options or {})),
+                      workflow=WpsWorkflow(Path(cache_dir) / 'state' if cache_dir else None))
     state, lock, token = shared['state'], shared['lock'], shared['token']
     wps_bridge, ocr = shared['renderer'], shared['ocr']
     chat = shared['chat']
+    workflow = shared['workflow']
 
     class Handler(BaseHTTPRequestHandler):
         def reply(self, obj, code=200):
@@ -67,6 +69,8 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       '/wps/': ('wps_addin/index.html', 'text/html; charset=utf-8'),
                       '/wps/index.html': ('wps_addin/index.html', 'text/html; charset=utf-8'),
                       '/wps/editor.html': ('wps_addin/editor.html', 'text/html; charset=utf-8'),
+                      '/wps/workflow.html': ('wps_addin/workflow.html', 'text/html; charset=utf-8'),
+                      '/wps/workflow.js': ('wps_addin/workflow.js', 'application/javascript'),
                       '/wps/recognize.js': ('wps_addin/recognize.js', 'application/javascript'),
                       '/wps/main.js': ('wps_addin/main.js', 'application/javascript'),
                       '/wps/adapter.js': ('wps_addin/adapter.js', 'application/javascript'),
@@ -140,6 +144,24 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 if base is not None and not isinstance(base, str):
                     raise ValueError('原文必须是字符串。')
                 return {'source': complete_source(source) if base is None else replace_formula(base, source)}
+            elif op == '/api/wps/settings':
+                return workflow.settings(req)
+            elif op == '/api/wps/draft-save':
+                return workflow.draft_save(req)
+            elif op == '/api/wps/draft-get':
+                return workflow.draft_get(req)
+            elif op == '/api/wps/draft-delete':
+                return workflow.draft_delete(req)
+            elif op == '/api/wps/review-create':
+                return workflow.review_create(req)
+            elif op == '/api/wps/review-get':
+                return workflow.review_get(req)
+            elif op == '/api/wps/review-status':
+                return {'decision': workflow.review_get(req)['decision']}
+            elif op == '/api/wps/review-decide':
+                return workflow.review_decide(req)
+            elif op == '/api/wps/review-discard':
+                return workflow.review_discard(req)
             elif op == '/api/wps/image-target':
                 return wps_bridge.image_target()
             elif op == '/api/wps/image-discard':

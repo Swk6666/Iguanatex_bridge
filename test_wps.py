@@ -97,6 +97,46 @@ class WpsIntegrationTests(unittest.TestCase):
                 self.request('/api/wps/image-read', {'token': token})
             caught.exception.close()
 
+    def test_workflow_settings_draft_and_review(self):
+        import base64
+        defaults = self.request('/api/wps/settings', {})
+        self.assertEqual(defaults['point_size'], 18)
+        settings = {'point_size': 26, 'color': '#DD2244', 'align': 'right', 'review': True}
+        self.assertEqual(self.request('/api/wps/settings', settings), settings)
+        self.assertEqual(self.request('/api/wps/settings', {}), settings)
+        identity = {'presentation': '/tmp/deck.pptx', 'slide_id': 42, 'shape_id': 7}
+        self.assertFalse(self.request('/api/wps/draft-get', {'identity': identity})['found'])
+        self.request('/api/wps/draft-save', {'identity': identity, 'signature': 'original', 'source': r'\bad', 'error': 'error log'})
+        draft = self.request('/api/wps/draft-get', {'identity': identity})
+        self.assertEqual((draft['source'], draft['error'], draft['signature']), (r'\bad', 'error log', 'original'))
+        self.assertEqual(self.request('/api/wps/draft-get', {'identity': dict(identity, shape_id=8)}), {'found': False})
+        self.request('/api/wps/draft-delete', {'identity': identity})
+        self.assertFalse(self.request('/api/wps/draft-get', {'identity': identity})['found'])
+        image = base64.b64encode(b'example').decode()
+        rid = self.request('/api/wps/review-create', {'image': image, 'preview': image})['id']
+        self.assertIsNone(self.request('/api/wps/review-status', {'id':rid})['decision'])
+        self.assertEqual(self.request('/api/wps/review-get', {'id':rid})['image'], image)
+        self.request('/api/wps/review-decide', {'id':rid, 'decision':'accept'})
+        self.assertEqual(self.request('/api/wps/review-status', {'id':rid})['decision'], 'accept')
+        self.request('/api/wps/review-discard', {'id':rid})
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.request('/api/wps/review-status', {'id':rid})
+        caught.exception.close()
+
+    def test_formula_color_is_rendered_and_editable(self):
+        import base64, io
+        from PIL import Image
+        result = self.request('/api/wps/render', {'source': 'E=mc^2', 'point_size': 24, 'color': '#D02030', 'output': 'png'})
+        self.assertIn(r'\color[HTML]{D02030}', result['source'])
+        self.assertEqual(result['tags']['LATEXADDIN'], result['source'])
+        with Image.open(io.BytesIO(base64.b64decode(result['png']))) as im:
+            pixels = [p for p in im.convert('RGBA').getdata() if p[3] > 128]
+        self.assertGreater(len(pixels), 0)
+        self.assertGreater(sum(1 for r,g,b,a in pixels if r>g*2 and r>b*2), len(pixels)*.9)
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.request('/api/wps/render', {'source':'x', 'color':'bad'})
+        caught.exception.close()
+
     def test_unknown_output_is_rejected(self):
         with self.assertRaises(urllib.error.HTTPError) as cm:
             self.request('/api/wps/render', {'source': 'x', 'output': 'emf'})

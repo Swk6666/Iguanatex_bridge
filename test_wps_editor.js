@@ -8,13 +8,15 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     const storage = options.storage || new Map();
     const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700,clientHeight:112});
     get('pointSize').value='18';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='font';
-    const ctx={shape:edit?{Id:1,Type:28,Width:30,Height:18.4,Left:70,Top:90}:null,slide:{SlideIndex:1},sourceData:{tags:{LATEXADDIN:'x'}},
+    const ctx={identity:{presentation:'deck',slide_id:1,shape_id:1},signature:'shape',shape:edit?{Id:1,Type:28,Width:30,Height:18.4,Left:70,Top:90}:null,slide:{SlideIndex:1},sourceData:{tags:{LATEXADDIN:'x'}},
         presentation:{PageSetup:{SlideWidth:960,SlideHeight:540}}};
-    const sandbox={URLSearchParams,location:{search:edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},addEventListener(){},
+    const sandbox={URLSearchParams,location:{search:options.draft?'?mode=draft':edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},addEventListener(){},
         localStorage:{getItem(k){if(options.noStorage)throw Error('storage disabled');return storage.get(k);},setItem(k,v){if(options.noStorage)throw Error('storage disabled');storage.set(k,v);}}},
         document:{body:{classList:{add(){}}},getElementById:get,querySelectorAll(){return[];},addEventListener(){}},
         fetch:async(url,request)=>({ok:!(state.failRender && url==='/api/wps/render'),json:async()=>{
             if(url.startsWith('/api/session'))return {token:'test'};
+            if(url==='/api/wps/draft-get')return {found:true,signature:options.badSignature?'other':'shape',settings:{point_size:30,color:'#DD2244',align:'right'},source:'\\documentclass{article}\n\\begin{document}\n$x=1$\n\\end{document}',error:'LaTeX 编译失败：\n! 错误'};
+            if(url==='/api/wps/draft-delete')return {ok:true};
             if(url==='/api/wps/metadata')return {found:true,source,engine:'xelatex',tags:{IGUANATEXSIZE:options.tagSize===undefined?'24':options.tagSize}};
             const body=JSON.parse(request.body);
             if(url==='/api/wps/image-target')return {token:'abc',path:'/tmp/test.png'};
@@ -41,6 +43,13 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     return {get,ctx,renders,replacements,storage,closed,state};
 }
 (async()=>{
+    {
+        const f=await fixture(true,'x',false,{draft:true});
+        assert.match(f.get('source').value,/x=1/);assert.match(f.get('errorText').textContent,/错误/);assert.equal(f.get('pointSize').value,30);
+        await f.get('applyButton').onclick();assert.equal(f.replacements.length,1);assert.equal(f.closed.length,1);assert.equal(f.renders[0].color,'#DD2244');assert.equal(f.ctx.align,'right');
+        const bad=await fixture(true,'x',false,{draft:true,badSignature:true});
+        assert.match(bad.get('status').textContent,/图片已改变/);assert.equal(bad.replacements.length,0);
+    }
     {
         const f=await fixture();assert.equal(f.get('sizeLabel').hidden,false);
         f.get('pointSize').value='36';f.get('pointSize').oninput();

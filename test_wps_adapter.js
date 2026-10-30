@@ -162,3 +162,13 @@ console.log('18 WPS adapter/ribbon contract tests passed');
     f.old.Tags.Add('LATEXADDIN',''); f.old.AlternativeText=''; f.old.Type=6; f.old.GroupItems={Count:0};
     assert.throws(()=>bridge.imageContext(),/未组合的图片/);
 }
+
+{
+    const f=fixture(); f.old.Tags.Add('LATEXADDIN',''); f.old.AlternativeText='';
+    const other=f.shapes[1]; other.Tags.Add('LATEXADDIN',''); other.AlternativeText='';
+    f.selection.ShapeRange={Count:2,Item(i){return [f.old,other][i-1];}};
+    const items=bridge.imageContexts(); assert.equal(items.length,2); assert.notEqual(items[0].ctx.shapeId,items[1].ctx.shapeId);
+    let ctx=items[0].ctx; ctx.sizeMode='font'; ctx.align='center';
+    assert.equal(bridge.layout(ctx,{width:40,height:20}).left,f.old.Left+(f.old.Width-40)/2);
+    ctx.align='right';assert.equal(bridge.layout(ctx,{width:40,height:20}).left,f.old.Left+f.old.Width-40);
+}

@@ -3,7 +3,7 @@
     var $ = function (id) { return document.getElementById(id); };
     var token = null;
     var mode = new URLSearchParams(location.search).get('mode') || 'new';
-    var ctx = null, preview = null, previewKey = '', busy = false, appliedPointSize = 18;
+    var ctx = null, preview = null, previewKey = '', busy = false, appliedPointSize = 18, draftStyle = null;
     var sizePreferenceKey = 'iguanatex-bridge.pointSize';
     function validSize(value) { var n = Number(value); return isFinite(n) && n >= 4 && n <= 200; }
     function preferredSize() {
@@ -115,8 +115,10 @@
             if (preview && previewKey === requestKey) { showPreview(preview); return preview; }
             clearPreview('正在编译当前源码…');
             status('正在使用本机 LaTeX 编译…');
-            var result = await compileApi('wps/render', {source: $('source').value, engine: $('engine').value,
-                point_size: pointSize, output: $('output').value, alt: ctx && ctx.original ? ctx.original.alt : ''});
+            var renderRequest = {source: $('source').value, engine: $('engine').value,
+                point_size: pointSize, output: $('output').value, alt: ctx && ctx.original ? ctx.original.alt : ''};
+            if (draftStyle) renderRequest.color = draftStyle.color;
+            var result = await compileApi('wps/render', renderRequest);
             if (key() !== requestKey) throw new Error('源码已变更，请重新预览。');
             preview = result; previewKey = requestKey;
             showPreview(result);
@@ -156,7 +158,9 @@
         IguanaWps.validate(ctx);
         var rendered = await renderFormula();
         ctx.sizeMode = sizeMode();
+        if (draftStyle) ctx.align = draftStyle.align;
         IguanaWps.replace(ctx, rendered);
+        if (mode === 'draft' && ctx.identity) { try { await api('wps/draft-delete', {identity: ctx.identity}); } catch (ignored) {} }
         appliedPointSize = Number(rendered.tags.IGUANATEXSIZE);
         $('sizeMode').value = ctx.sizeMode;
         preview = null; $('applyButton').textContent = '更新此公式'; $('sizeModeRow').hidden = false; sizeHint();
@@ -190,10 +194,24 @@
         if (mode === 'protect') { $('protect').hidden = false; status('准备检查当前演示文稿中的公式源码。'); return; }
         document.body.classList.add('editing');
         $('pointSize').value = preferredSize();
-        ctx = IguanaWps.context(mode === 'edit');
+        ctx = mode === 'draft' ? IguanaWps.imageContext() : IguanaWps.context(mode === 'edit');
         $('editor').hidden = false;
         $('target').textContent = '第 ' + ctx.slide.SlideIndex + ' 页';
-        if (ctx.shape) {
+        if (mode === 'draft') {
+            var draft = await api('wps/draft-get', {identity:ctx.identity});
+            if (!draft.found) throw new Error('当前图片没有保存的失败草稿。');
+            if (draft.signature !== ctx.signature) throw new Error('图片已改变，无法安全匹配草稿；请先恢复原图。');
+            await IguanaLatex.load($('source'), draft.source, api);
+            draftStyle = draft.settings || null;
+            if (draftStyle && validSize(draftStyle.point_size)) $('pointSize').value = draftStyle.point_size;
+            $('engine').value = 'xelatex';
+            $('sizeModeRow').hidden = false; $('sizeMode').value = 'font';
+            $('applyButton').textContent = '替换为公式';
+            $('editNote').textContent = '这是识别失败时保存的草稿。修改源码并预览后，可替换当前原图。';
+            $('errorDetails').hidden = false; $('errorText').textContent = draft.error;
+            if (draft.error) setCompileError({source:draft.source, engine:'xelatex', message:draft.error});
+            status('已恢复失败草稿；原图片仍在幻灯片中。');
+        } else if (ctx.shape) {
             var meta = await api('wps/metadata', ctx.sourceData);
             if (!meta.found) throw new Error('选中的对象没有可读的 IguanaTex 源码。若仅剩 PNG 备份，请使用独立 PPTX 编辑器恢复。');
             if (!['xelatex','pdflatex','lualatex'].includes(meta.engine)) throw new Error('原公式使用暂不支持的编译引擎；请通过独立编辑器转换。');

@@ -8,6 +8,12 @@
           <button id="IguanaRecognize" label="图片转公式" size="large" imageMso="PictureInsert" onAction="OnRecognizeImage" screentip="识别选中的图片并生成可编辑公式；图片将发送至 OpenAI"/>
           <button id="IguanaEdit" label="编辑选中公式" size="large" imageMso="FileSaveAs" onAction="OnEditFormula" screentip="读取选中图片内的 IguanaTex 源码"/>
         </group>
+        <group id="IguanaTexAutomation" label="转换管理">
+          <button id="IguanaStatus" getLabel="GetConversionStatus" size="large" imageMso="Info" onAction="OnConversionStatus" screentip="查看后台转换进度与结果"/>
+          <button id="IguanaCancel" label="取消转换" imageMso="CancelRequest" onAction="OnCancelConversion"/>
+          <button id="IguanaSettings" label="转换设置" imageMso="Settings" onAction="OnConversionSettings"/>
+          <button id="IguanaDraft" label="编辑失败草稿" imageMso="FileSaveAs" onAction="OnEditDraft" screentip="选中转换失败的原图，继续编辑已保存的草稿"/>
+        </group>
         <group id="IguanaTexCompatibility" label="跨平台">
           <button id="IguanaProtect" label="检查与同步源码" size="large" imageMso="FileCompatibilityChecker" onAction="OnProtectFormulas"/>
           <button id="IguanaHelp" label="环境与帮助" size="large" imageMso="Help" onAction="OnBridgeHelp"/>

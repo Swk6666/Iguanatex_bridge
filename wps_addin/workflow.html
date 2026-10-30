@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IguanaTex 转换</title>
+<style>
+*{box-sizing:border-box}body{font:15px system-ui,sans-serif;color:#203b39;background:#f5f8f7;margin:0}main{max-width:1000px;margin:auto;padding:24px}h1{font-size:22px;margin:0 0 8px}p{color:#59716e;line-height:1.55}section{background:white;border:1px solid #d6e1df;border-radius:14px;padding:22px;box-shadow:0 4px 16px #163b3110}label{display:block;margin:16px 0;color:#294340;font-weight:600}input,select{display:block;margin-top:8px;padding:9px;border:1px solid #becfcc;border-radius:7px;font:inherit}input[type=checkbox]{display:inline;margin:0 8px 0 0}button{border:1px solid #b9cdca;border-radius:8px;padding:10px 17px;background:white;font:inherit;cursor:pointer}button.primary{background:#087c70;color:white;border-color:#087c70}.buttons{display:flex;gap:10px;margin-top:18px}.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{border:1px solid #dce6e4;border-radius:10px;padding:14px;min-width:0}.panel h2{font-size:15px;margin:0 0 10px}.panel .image{min-height:220px;display:flex;align-items:center;justify-content:center;background:white;overflow:auto}.panel img{max-width:100%;height:auto}#status{min-height:24px;color:#9b302b}small{font-weight:400;color:#59716e}@media(max-width:600px){.compare{grid-template-columns:1fr}}
+</style></head><body><main>
+<section id="settings" hidden><h1>图片转公式设置</h1><p>这些设置应用到以后转换的图片。</p>
+<label>统一字号（pt）<input id="size" type="number" min="4" max="200" step="0.5"></label>
+<label>公式颜色<input id="color" type="color"></label>
+<label>相对于原图对齐<select id="align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></label>
+<label><input id="review" type="checkbox">替换前逐张对照校对 <small>关闭时直接在后台转换</small></label>
+<div class="buttons"><button id="save" class="primary">保存设置</button><button id="settingsClose">关闭</button></div></section>
+<section id="reviewPanel" hidden><h1>对照校对</h1><p>请检查识别内容。选择替换后，才会把该图片替换成公式；跳过将保留原图。</p>
+<div class="compare"><div class="panel"><h2>原图片</h2><div class="image"><img id="original" alt="原图片"></div></div><div class="panel"><h2>生成公式</h2><div class="image"><img id="result" alt="生成公式"></div></div></div>
+<div class="buttons"><button id="accept" class="primary">替换为公式</button><button id="skip">跳过，保留原图</button><button id="cancel">取消整个批次</button></div></section>
+<p id="status" role="status"></p></main><script src="workflow.js"></script></body></html>

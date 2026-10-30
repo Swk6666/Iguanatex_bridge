@@ -54,7 +54,10 @@ class WpsBridge:
         size = float(req.get('point_size', 24))
         if not 4 <= size <= 200:
             raise ValueError('字号须在 4–200 之间。')
-        rendered = render(req['source'], req.get('engine', 'xelatex'))
+        source = req['source']
+        if req.get('color') is not None:
+            source = self.color_source(source, req['color'])
+        rendered = render(source, req.get('engine', 'xelatex'))
         # Reuse the same IguanaTex serialization as offline PPTX editing.
         deck = Deck.blank()
         deck.add_or_update(rendered)
@@ -92,6 +95,24 @@ class WpsBridge:
                     width=rendered.width_pt * size / 10, height=rendered.height_pt * size / 10)
 
     @staticmethod
+    def color_source(source, color):
+        from latex_source import active_tex, complete_source
+        if not isinstance(color, str) or not re.fullmatch(r'#[0-9A-Fa-f]{6}', color):
+            raise ValueError('颜色须为六位十六进制颜色。')
+        source = complete_source(source)
+        active = active_tex(source)
+        begin = re.search(r'\\begin\s*\{document\}', active)
+        if not begin:
+            raise ValueError('完整 LaTeX 文档缺少 document 环境。')
+        preamble = active[:begin.start()]
+        package = re.search(r'\\(?:usepackage|RequirePackage)(?:\s*\[[^]]*\])?\s*\{[^}]*\bxcolor\b[^}]*\}', preamble)
+        if not package:
+            source = source[:begin.start()] + '\\usepackage{xcolor}\n' + source[begin.start():]
+            active = active_tex(source)
+            begin = re.search(r'\\begin\s*\{document\}', active)
+        return source[:begin.end()] + '\n\\color[HTML]{' + color[1:].upper() + '}\n' + source[begin.end():]
+
+    @staticmethod
     def metadata(req):
         tags = {str(k).upper(): str(v) for k, v in req.get('tags', {}).items()}
         alt = str(req.get('alt', ''))
@@ -114,3 +135,125 @@ class WpsBridge:
         meta = dict(version=1, uid=uid, source=source, engine=engine, tags=tags)
         return dict(found=True, source=source, engine=engine, tags=tags, origin=origin,
                     alt=(human_alt(alt) + '\n' + encode_meta(meta)).strip())
+
+
+class WpsWorkflow:
+    """Private settings, recoverable drafts, and transient review decisions."""
+    DEFAULTS = {'point_size': 18, 'color': '#000000', 'align': 'left', 'review': False}
+
+    def __init__(self, directory=None):
+        from paths import state_dir
+        self.directory = Path(directory or state_dir()) / 'wps-workflow'
+        self.reviews = {}
+
+    def _write(self, path, data):
+        import json
+        self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd, name = tempfile.mkstemp(prefix='.workflow-', dir=self.directory)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False)
+            os.chmod(name, 0o600)
+            os.replace(name, path)
+        finally:
+            if os.path.exists(name):
+                os.unlink(name)
+
+    def settings(self, req):
+        import json
+        path = self.directory / 'settings.json'
+        if not req:
+            try:
+                return dict(self.DEFAULTS, **json.loads(path.read_text(encoding='utf-8')))
+            except FileNotFoundError:
+                return dict(self.DEFAULTS)
+        result = self.valid_settings(req)
+        self._write(path, result)
+        return result
+
+    @staticmethod
+    def valid_settings(req):
+        if not isinstance(req, dict):
+            raise ValueError('转换设置无效。')
+        size, color, align, review = req.get('point_size'), req.get('color'), req.get('align'), req.get('review')
+        if isinstance(size, bool) or not isinstance(size, (int, float)) or not 4 <= size <= 200:
+            raise ValueError('字号须在 4–200 pt 之间。')
+        if not isinstance(color, str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', color):
+            raise ValueError('颜色须为六位十六进制颜色。')
+        if align not in ('left', 'center', 'right') or not isinstance(review, bool):
+            raise ValueError('对齐方式或校对选项无效。')
+        return {'point_size': size, 'color': color.upper(), 'align': align, 'review': review}
+
+    def draft_path(self, identity):
+        import hashlib
+        if not isinstance(identity, dict) or set(identity) != {'presentation', 'slide_id', 'shape_id'}:
+            raise ValueError('图片标识无效。')
+        name, slide, shape = identity['presentation'], identity['slide_id'], identity['shape_id']
+        if not isinstance(name, str) or not name or len(name) > 4096 or not isinstance(slide, int) or isinstance(slide, bool) or not isinstance(shape, int) or isinstance(shape, bool):
+            raise ValueError('图片标识无效。')
+        raw = (name + '\0' + str(slide) + '\0' + str(shape)).encode('utf-8')
+        return self.directory / ('draft-' + hashlib.sha256(raw).hexdigest() + '.json')
+
+    def draft_save(self, req):
+        identity, source, error = req.get('identity'), req.get('source'), req.get('error', '')
+        path = self.draft_path(identity)
+        if not isinstance(source, str) or not source.strip() or len(source) > MAX_SOURCE or not isinstance(error, str):
+            raise ValueError('草稿源码或日志无效。')
+        signature = req.get('signature', '')
+        if not isinstance(signature, str) or len(signature) > 50000:
+            raise ValueError('图片状态无效。')
+        settings = self.valid_settings(req.get('settings', self.DEFAULTS))
+        draft = {'identity': identity, 'signature': signature, 'source': source, 'error': error[:20000], 'settings': settings, 'updated': time.time()}
+        self._write(path, draft)
+        return {'saved': True}
+
+    def draft_get(self, req):
+        import json
+        path = self.draft_path(req.get('identity'))
+        try:
+            draft = json.loads(path.read_text(encoding='utf-8'))
+        except FileNotFoundError:
+            return {'found': False}
+        if draft.get('identity') != req['identity']:
+            raise ValueError('草稿与选中的图片不匹配。')
+        return dict(draft, found=True)
+
+    def draft_delete(self, req):
+        self.draft_path(req.get('identity')).unlink(missing_ok=True)
+        return {'ok': True}
+
+    def review_create(self, req):
+        image, preview = req.get('image'), req.get('preview')
+        for value in (image, preview):
+            if not isinstance(value, str) or len(value) > 14_000_000 or not value:
+                raise ValueError('校对图片无效。')
+            try:
+                base64.b64decode(value, validate=True)
+            except ValueError:
+                raise ValueError('校对图片无效。') from None
+        now = time.time()
+        self.reviews = {k: v for k, v in self.reviews.items() if now - v['created'] < 3600}
+        token = uuid.uuid4().hex
+        self.reviews[token] = {'image': image, 'preview': preview, 'decision': None, 'created': now}
+        return {'id': token}
+
+    def review_get(self, req):
+        token = req.get('id')
+        review = self.reviews.get(token) if isinstance(token, str) else None
+        if review is None:
+            raise ValueError('校对已结束或过期。')
+        return review
+
+    def review_decide(self, req):
+        decision = req.get('decision')
+        if decision not in ('accept', 'skip', 'cancel'):
+            raise ValueError('校对操作无效。')
+        review = self.review_get(req)
+        if review['decision'] is not None:
+            raise ValueError('此图片已处理。')
+        review['decision'] = decision
+        return {'ok': True}
+
+    def review_discard(self, req):
+        self.reviews.pop(req.get('id'), None)
+        return {'ok': True}

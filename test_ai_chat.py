@@ -140,6 +140,14 @@ class TransportTests(unittest.TestCase):
             self.assertNotIn('secret', str(caught.exception))
             self.assertEqual(len(opener.calls), 1)
 
+    def test_quota_and_rate_limit_are_distinct(self):
+        for code, expected in [('insufficient_quota', '额度不足'), ('rate_limit_exceeded', '请求受限')]:
+            body = json.dumps({'error': {'code': code, 'message': 'private-secret'}}).encode()
+            opener = Opener(error=urllib.error.HTTPError(ENDPOINT, 429, '', {}, io.BytesIO(body)))
+            with self.assertRaisesRegex(ValueError, expected) as caught:
+                OpenAIClient(opener).answer('key', DEFAULT_MODEL, [], lambda x: None, threading.Event())
+            self.assertNotIn('private-secret', str(caught.exception))
+
     def test_cancel_and_timeout_and_redirect(self):
         event = threading.Event(); event.set(); opener = Opener(b'')
         with self.assertRaises(Cancelled):
