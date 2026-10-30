@@ -81,6 +81,22 @@ class WpsIntegrationTests(unittest.TestCase):
             self.assertGreater(max(pix.samples[3::4]), 0)
             self.assertEqual(min(pix.samples[3::4]), 0)
 
+    def test_recognition_image_export_and_cleanup(self):
+        from PIL import Image
+        target = self.request('/api/wps/image-target', {})
+        path = Path(target['path'])
+        Image.new('RGB', (12, 8), 'white').save(path)
+        result = self.request('/api/wps/image-read', {'token': target['token']})
+        import base64, io
+        with Image.open(io.BytesIO(base64.b64decode(result['data']))) as image:
+            self.assertEqual(image.size, (12, 8))
+        self.assertFalse(path.exists())
+        self.request('/api/wps/image-discard', {'token': target['token']})
+        for token in ('../bad', 'a' * 32 + '/x'):
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                self.request('/api/wps/image-read', {'token': token})
+            caught.exception.close()
+
     def test_unknown_output_is_rejected(self):
         with self.assertRaises(urllib.error.HTTPError) as cm:
             self.request('/api/wps/render', {'source': 'x', 'output': 'emf'})
@@ -109,7 +125,7 @@ class WpsIntegrationTests(unittest.TestCase):
         for asset in ('latex.js', 'workspace.js', 'workspace.css'):
             with urllib.request.urlopen(self.base + '/shared/' + asset) as response:
                 self.assertEqual(response.status, 200)
-        for asset in ['ribbon.xml', 'main.js', 'adapter.js', 'editor.js', 'style.css']:
+        for asset in ['ribbon.xml', 'main.js', 'adapter.js', 'recognize.js', 'editor.js', 'style.css']:
             with urllib.request.urlopen(self.base + '/wps/' + asset) as response:
                 self.assertEqual(response.status, 200)
                 self.assertNotIn(self.token.encode(), response.read())

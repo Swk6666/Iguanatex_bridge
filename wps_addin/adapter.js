@@ -88,6 +88,21 @@
             original: shape ? snapshot(shape) : null, sourceData: owner ? owner.data : null,
             structure: shape ? JSON.stringify(groupState(shape)) : null};
     }
+    function imageContext() {
+        var ctx = context(true);
+        if ([11, 13].indexOf(ctx.shape.Type) < 0) throw new Error('请选中一张未组合的图片，再点击“图片转公式”。');
+        if (hasSource(ctx.sourceData)) throw new Error('这已经是可编辑公式，请使用“编辑选中公式”。');
+        ctx.imageGeometry = geometry(ctx.shape);
+        return ctx;
+    }
+    function geometry(shape) {
+        return JSON.stringify([shape.Left, shape.Top, shape.Width, shape.Height, shape.Rotation, shape.HorizontalFlip, shape.VerticalFlip]);
+    }
+    function exportImage(ctx, path) {
+        validate(ctx);
+        try { ctx.shape.SaveAsPicture(path); }
+        catch (e) { throw new Error('WPS 无法导出所选图片，请确认图片格式及当前 WPS 版本支持另存图片。'); }
+    }
     function validate(ctx) {
         var slide = null;
         for (var i = 1; i <= ctx.presentation.Slides.Count; i++) {
@@ -103,6 +118,7 @@
             }
             if (!current) throw new Error('目标公式已删除，请重新打开编辑器。');
             if (JSON.stringify(groupState(current)) !== ctx.structure) throw new Error('公式源码或组合结构已在其他窗口修改，请重新载入。');
+            if (ctx.imageGeometry && geometry(current) !== ctx.imageGeometry) throw new Error('图片位置或尺寸已改变，请重新选择后重试。');
             ctx.shape = current;
         }
     }
@@ -149,6 +165,7 @@
             if (added) { try { added.Delete(); } catch (ignored) {} }
             throw e;
         }
+        ctx.imageGeometry = null;
         ctx.shape = added; ctx.shapeId = added.Id; ctx.original = snapshot(added);
         ctx.sourceData = ctx.original; ctx.structure = JSON.stringify(groupState(added));
         try { added.Select(); } catch (ignored) {}
@@ -166,6 +183,6 @@
         for (var page = 1; page <= presentation.Slides.Count; page++) walk(presentation.Slides.Item(page).Shapes, page);
         return result;
     }
-    root.IguanaWps = {context: context, validate: validate, tags: tags, snapshot: snapshot, stamp: stamp, layout: layout, replace: replace, formulas: formulas};
+    root.IguanaWps = {context: context, imageContext: imageContext, exportImage: exportImage, validate: validate, tags: tags, snapshot: snapshot, stamp: stamp, layout: layout, replace: replace, formulas: formulas};
     if (typeof module !== 'undefined') module.exports = root.IguanaWps;
 }(typeof window !== 'undefined' ? window : globalThis));

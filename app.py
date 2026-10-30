@@ -67,6 +67,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       '/wps/': ('wps_addin/index.html', 'text/html; charset=utf-8'),
                       '/wps/index.html': ('wps_addin/index.html', 'text/html; charset=utf-8'),
                       '/wps/editor.html': ('wps_addin/editor.html', 'text/html; charset=utf-8'),
+                      '/wps/recognize.js': ('wps_addin/recognize.js', 'application/javascript'),
                       '/wps/main.js': ('wps_addin/main.js', 'application/javascript'),
                       '/wps/adapter.js': ('wps_addin/adapter.js', 'application/javascript'),
                       '/wps/editor.js': ('wps_addin/editor.js', 'application/javascript'),
@@ -139,6 +140,12 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 if base is not None and not isinstance(base, str):
                     raise ValueError('原文必须是字符串。')
                 return {'source': complete_source(source) if base is None else replace_formula(base, source)}
+            elif op == '/api/wps/image-target':
+                return wps_bridge.image_target()
+            elif op == '/api/wps/image-discard':
+                return wps_bridge.image_discard(req)
+            elif op == '/api/wps/image-read':
+                return wps_bridge.image_read(req)
             elif op in ('/api/wps/render', '/api/render'):
                 return wps_bridge.render(req)
             elif op in ('/api/wps/metadata', '/api/metadata'):

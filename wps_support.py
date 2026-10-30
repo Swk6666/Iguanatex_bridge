@@ -1,6 +1,7 @@
 """Local render and metadata API shared by WPS and Office JavaScript add-ins."""
 import base64
 import os
+import re
 from pathlib import Path
 import tempfile
 import time
@@ -14,6 +15,37 @@ class WpsBridge:
     def __init__(self, cache_dir=None):
         self.cache = Path(cache_dir or Path(tempfile.gettempdir()) / ('iguanatex-bridge-' + str(os.getuid() if hasattr(os, 'getuid') else 'user')))
         self.cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+
+    def image_target(self):
+        # Only opaque server-generated names are accepted by image_read.
+        token = uuid.uuid4().hex
+        for old in self.cache.glob('recognize-*.png'):
+            if time.time() - old.stat().st_mtime > 3600:
+                old.unlink(missing_ok=True)
+        return {'token': token, 'path': str((self.cache / ('recognize-' + token + '.png')).resolve())}
+
+    def image_path(self, req):
+        token = req.get('token', '')
+        if not isinstance(token, str) or not re.fullmatch(r'[0-9a-f]{32}', token):
+            raise ValueError('图片导出标识无效。')
+        return self.cache / ('recognize-' + token + '.png')
+
+    def image_discard(self, req):
+        self.image_path(req).unlink(missing_ok=True)
+        return {'ok': True}
+
+    def image_read(self, req):
+        path = self.image_path(req)
+        try:
+            if path.is_symlink() or not path.is_file():
+                raise ValueError('WPS 未能导出图片，请检查当前版本是否支持此功能。')
+            if path.stat().st_size > 10 * 1024 * 1024:
+                raise ValueError('选中的图片超过 10 MB。')
+            from ocr import prepare_image
+            encoded = base64.b64encode(path.read_bytes()).decode('ascii')
+            return {'data': base64.b64encode(prepare_image(encoded)).decode('ascii')}
+        finally:
+            path.unlink(missing_ok=True)
 
     def render(self, req):
         output = req.get('output', 'png').lower()

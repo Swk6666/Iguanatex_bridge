@@ -44,6 +44,8 @@ wps_addin/editor.js
 wps_addin/index.html
 wps_addin/main.js
 wps_addin/ribbon.xml
+wps_addin/recognize.js
+test_wps_recognize.js
 wps_addin/style.css
 wps_support.py
 deepseek_selectors.example.json

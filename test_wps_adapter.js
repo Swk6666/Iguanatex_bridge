@@ -147,3 +147,18 @@ const data = {path:'/tmp/test.png',tags:{LATEXADDIN:'new CaseSensitive source'},
     const p=bridge.replace(ctx,sentence);assert.equal(p.Height,18.4);assert.equal(p.Width,18.4*sentence.width/sentence.height);assert.equal(p.Left,70);
 }
 console.log('18 WPS adapter/ribbon contract tests passed');
+
+{
+    const f=fixture(); f.old.Tags.Add('LATEXADDIN',''); f.old.AlternativeText='';
+    let path=''; f.old.SaveAsPicture=(p)=>{path=p;};
+    const ctx=bridge.imageContext(); bridge.exportImage(ctx,'/tmp/example.png');
+    assert.equal(path,'/tmp/example.png');
+    f.old.Left += 5;
+    assert.throws(()=>bridge.validate(ctx),/位置或尺寸已改变/);
+    assert.ok(f.shapes.includes(f.old));
+}
+{
+    const f=fixture(); assert.throws(()=>bridge.imageContext(),/已经是可编辑公式/);
+    f.old.Tags.Add('LATEXADDIN',''); f.old.AlternativeText=''; f.old.Type=6; f.old.GroupItems={Count:0};
+    assert.throws(()=>bridge.imageContext(),/未组合的图片/);
+}

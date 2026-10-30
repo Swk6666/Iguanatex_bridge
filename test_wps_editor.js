@@ -17,12 +17,18 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
             if(url.startsWith('/api/session'))return {token:'test'};
             if(url==='/api/wps/metadata')return {found:true,source,engine:'xelatex',tags:{IGUANATEXSIZE:options.tagSize===undefined?'24':options.tagSize}};
             const body=JSON.parse(request.body);
+            if(url==='/api/wps/image-target')return {token:'abc',path:'/tmp/test.png'};
+            if(url==='/api/wps/image-read')return {data:'image-data'};
+            if(url==='/api/wps/image-discard')return {ok:true};
+            if(url==='/api/chat/start'){assert.equal(body.data,'image-data');return {id:'job',conversation_id:'conversation'};}
+            if(url==='/api/chat/status')return options.recognitionFail ? {status:'failed',message:'识别失败'} : {status:'succeeded'};
+            if(url==='/api/chat/history')return {turns:[{id:'job',latex_blocks:['\\documentclass{article}\n\\begin{document}\n$x=1$\n\\end{document}']}]};
             if(url==='/api/latex/source')return {source:body.source.includes('\\documentclass')?body.source:'\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\n\\[\n'+body.source+'\n\\]\n\\end{document}\n'};
             renders.push(body);
             if(state.failRender)return {error:'LaTeX 编译失败：unknown command'};
             return {png:'test',width:body.point_size*(options.sentence?13.944:2),height:body.point_size*(options.sentence?1.152:1), tags:{IGUANATEXSIZE:String(body.point_size)}};
         }}),
-        IguanaWps:{context(){return ctx;},validate(){},layout,replace(c,d){
+        IguanaWps:{context(){return ctx;},imageContext(){return ctx;},exportImage(c,p){assert.equal(p,'/tmp/test.png');},validate(){},layout,replace(c,d){
             if (options.failWrite) throw Error('写入失败，原公式已保留');
             const box=layout(c,d);replacements.push({mode:c.sizeMode,width:box.width,height:box.height});
             c.shape={Id:2,Width:box.width,Height:box.height,Left:box.left,Top:box.top};

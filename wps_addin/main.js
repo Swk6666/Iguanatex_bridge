@@ -12,6 +12,11 @@ function bridgeDialog(mode) {
     return true;
 }
 function OnNewFormula() { return bridgeDialog('new'); }
+function OnRecognizeImage() {
+    // Keep WPS API calls out of the native ribbon callback.
+    setTimeout(function () { window.IguanaRecognize.start(); }, 10);
+    return true;
+}
 function OnEditFormula() { return bridgeDialog('edit'); }
 function OnProtectFormulas() { return bridgeDialog('protect'); }
 function OnBridgeHelp() { return bridgeDialog('help'); }

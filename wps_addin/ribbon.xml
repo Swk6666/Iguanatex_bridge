@@ -5,6 +5,7 @@
       <tab id="IguanaTexBridgeTab" label="IguanaTex">
         <group id="IguanaTexFormulas" label="LaTeX 公式">
           <button id="IguanaNew" label="新建公式" size="large" imageMso="FileNew" onAction="OnNewFormula" screentip="在当前幻灯片插入 LaTeX 公式"/>
+          <button id="IguanaRecognize" label="图片转公式" size="large" imageMso="PictureInsert" onAction="OnRecognizeImage" screentip="识别选中的图片并生成可编辑公式；图片将发送至 OpenAI"/>
           <button id="IguanaEdit" label="编辑选中公式" size="large" imageMso="FileSaveAs" onAction="OnEditFormula" screentip="读取选中图片内的 IguanaTex 源码"/>
         </group>
         <group id="IguanaTexCompatibility" label="跨平台">
