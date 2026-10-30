@@ -11,7 +11,7 @@
 
 安装完成后公式在本机编译，日常不需要 Codex、PowerPoint、Node.js 或手动开终端。Ubuntu 端使用 WPS 插件；Windows / Mac 的 PowerPoint 端可使用[新增 Office 加载项](INSTALL_OFFICE.md)或上游 IguanaTex。
 
-WPS 插件的文字／图片对话默认接入 DeepSeek API。运行 `bash install.sh` 即包含此功能，无需 Chrome 或 Playwright；首次在“AI 助手 → API 设置”保存 DeepSeek API Key，详见 [API 对话](API_CHAT.md)。每台电脑需要各自配置密钥，密钥不随 Git 或 ZIP 分发。发送时上传当前对话中的文字和所选图片，公式渲染仍在本机进行。只有独立 Qt 桌面 GUI 的旧版网页识别需要 `bash install.sh --with-ocr` 与 Chrome。
+WPS 插件的文字／图片对话默认接入 OpenAI API。运行 `bash install.sh` 即包含此功能，无需 Chrome 或 Playwright；首次在“AI 助手 → API 设置”保存 OpenAI API Key，详见 [API 对话](API_CHAT.md)。每台电脑需要各自配置密钥，密钥不随 Git 或 ZIP 分发。发送时上传当前对话中的文字和所选图片，公式渲染仍在本机进行。只有独立 Qt 桌面 GUI 的旧版网页识别需要 `bash install.sh --with-ocr` 与 Chrome。
 
 ## 推荐：克隆后一键安装
 

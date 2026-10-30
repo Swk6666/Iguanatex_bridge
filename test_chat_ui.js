@@ -15,7 +15,7 @@ async function fixture(options={}) {
         return el;
     }
     const container=element('panel'),source=element('source');source.value='original';
-    let config={configured:options.configured!==false,model:'deepseek-flash',key_source:'本机设置'};
+    let config={configured:options.configured!==false,model:'gpt-6-astra',key_source:'本机设置'};
     let data=options.history||{conversation_id:null,revision:0,turns:[],active_job:null};
     let cancelled=false, canStart=true;
     const sandbox={document:{createElement(){return element();},execCommand(){return true;}},
@@ -32,7 +32,7 @@ async function fixture(options={}) {
             if(path==='chat/start'){
                 const id='job'+(data.turns.length+1);
                 data={conversation_id:'conversation',revision:data.revision+1,active_job:id,turns:data.turns.concat({id,
-                    message:req.message||'识别图片',has_image:!!req.data,model:'deepseek-flash',answer:'',status:'answering'})};
+                    message:req.message||'识别图片',has_image:!!req.data,model:'gpt-6-astra',answer:'',status:'answering'})};
                 return {id,conversation_id:'conversation'};
             }
             if(path==='chat/cancel'){cancelled=true;return {};}
@@ -82,7 +82,7 @@ const button=(f,label)=>f.created.find(e=>e.textContent===label&&typeof e.onclic
     await test(async()=>{
         const f=await fixture({configured:false});f.prompt('问题');await f.click('send');
         assert.equal(f.calls.filter(c=>c[0]==='chat/start').length,0);
-        f.element('panel .chat-key').value='secret';f.element('panel .chat-model').value='deepseek-flash';await f.click('save');
+        f.element('panel .chat-key').value='secret';f.element('panel .chat-model').value='gpt-6-astra';await f.click('save');
         assert.equal(f.element('panel .chat-key').value,'');assert(!JSON.stringify([...f.storage]).includes('secret'));
         await f.click('send');assert.equal(f.calls.filter(c=>c[0]==='chat/start').length,1);
     });
@@ -110,8 +110,8 @@ const button=(f,label)=>f.created.find(e=>e.textContent===label&&typeof e.onclic
         f.prompt('新问题');await f.click('send');assert.equal(f.calls.filter(c=>c[0]==='chat/start')[1][1].conversation_id,null);
     });
     await test(async()=>{
-        const f=await fixture({storage:new Map([['iguanatex-bridge.deepseekConversation','conversation']]),
-            history:{conversation_id:'conversation',revision:1,active_job:'running',turns:[{id:'running',status:'answering',answer:'',message:'old',model:'deepseek-flash'}]}});
+        const f=await fixture({storage:new Map([['iguanatex-bridge.openaiConversation','conversation']]),
+            history:{conversation_id:'conversation',revision:1,active_job:'running',turns:[{id:'running',status:'answering',answer:'',message:'old',model:'gpt-6-astra'}]}});
         assert(f.calls.some(c=>c[0]==='chat/status'));assert.equal(f.controller.isBusy(),false);assert(button(f,'采用 LaTeX'));
     });
     await test(async()=>{
@@ -145,5 +145,5 @@ const button=(f,label)=>f.created.find(e=>e.textContent===label&&typeof e.onclic
         assert(text.length<=8000,'report must fit the 8000-character chat limit, got '+text.length);
         assert.match(report({source:'x',engine:'pdflatex',message:'LaTeX 编译超过 50 秒；请检查源码。'}),/50 秒/);
     });
-    console.log(count+' DeepSeek chat UI tests passed');
+    console.log(count+' OpenAI chat UI tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,4 +1,4 @@
-/* Shared DeepSeek chat. Only an explicit Send uploads text/images. */
+/* Shared OpenAI chat. Only an explicit Send uploads text/images. */
 (function (root) {
     'use strict';
     function icon(paths) {
@@ -8,7 +8,7 @@
         container.classList.add('chat-panel');
         var wrapper = options.docked ? 'div' : 'details';
         container.innerHTML = '<' + wrapper + ' class="chat-main"' + (options.docked || options.collapsed ? '' : ' open') + '>' +
-            (options.docked ? '' : '<summary>AI 对话 · DeepSeek API</summary>') + '<div class="chat-body">' +
+            (options.docked ? '' : '<summary>AI 对话 · OpenAI API</summary>') + '<div class="chat-body">' +
             '<div class="chat-toolbar"><button type="button" data-action="new" title="开始不携带旧内容的对话">' + icon('<path d="M12 5v14M5 12h14"/>') + '新对话</button><button type="button" data-action="refresh" title="从本机服务重新读取对话">' + icon('<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>') + '刷新</button>' +
             '<details class="chat-guide"><summary title="AI 每次回答前都会先阅读的项目指令">' + icon('<path d="M6.5 3.5h8l3 3v14h-11z"/><path d="M9.5 10h5M9.5 13.5h5M9.5 17h3"/>') + '指令</summary><div class="chat-settings-body">' +
             '<p class="chat-guide-state">正在读取…</p>' +
@@ -16,16 +16,16 @@
             '<p class="chat-note">每次发送前 AI 都会先阅读这份指令，保存后下一次发送生效。&lt;!-- 注释 --&gt; 不会发送。<br><span class="chat-guide-path"></span></p>' +
             '<div class="chat-actions"><button type="button" data-action="save-guide">保存指令</button><button type="button" data-action="reload-guide" title="放弃未保存的修改，从文件重新读取">重新读取</button></div></div></details>' +
             '<details class="chat-settings"><summary>' + icon('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>') + 'API 设置</summary><div class="chat-settings-body"><p class="chat-config-status">正在读取…</p>' +
-            '<label>DeepSeek API Key<input class="chat-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="已保存时留空即可"></label>' +
-            '<label>模型<input class="chat-model" type="text" spellcheck="false" value="deepseek-flash" maxlength="128"></label>' +
-            '<p class="chat-note">密钥仅保存在本机，不写入 PPTX 或 Git。<a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">获取 API Key</a></p>' +
+            '<label>OpenAI API Key<input class="chat-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="已保存时留空即可"></label>' +
+            '<label>模型<input class="chat-model" type="text" spellcheck="false" value="gpt-6-astra" maxlength="128"></label>' +
+            '<p class="chat-note">密钥仅保存在本机，不写入 PPTX 或 Git。<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">获取 API Key</a></p>' +
             '<div class="chat-actions"><button type="button" data-action="save">保存设置</button><button type="button" data-action="clear-key">删除本机密钥</button></div></div></details></div>' +
-            '<div class="chat-history" role="region" aria-label="DeepSeek 对话记录"></div>' +
-            '<div class="chat-composer"><div class="chat-box"><label class="chat-prompt-label"><span class="chat-sr">发送给 DeepSeek</span><textarea class="chat-prompt" rows="3" maxlength="8000" spellcheck="false" placeholder="描述公式，或附图让 AI 识别…"></textarea></label>' +
+            '<div class="chat-history" role="region" aria-label="OpenAI 对话记录"></div>' +
+            '<div class="chat-composer"><div class="chat-box"><label class="chat-prompt-label"><span class="chat-sr">发送给 OpenAI</span><textarea class="chat-prompt" rows="3" maxlength="8000" spellcheck="false" placeholder="描述公式，或附图让 AI 识别…"></textarea></label>' +
             '<div class="chat-image" tabindex="0" aria-label="图片拖放区"><span>拖入或粘贴图片 · ≤10 MB</span><img alt="待发送的图片" hidden></div>' +
             '<div class="chat-actions"><label class="chat-file" title="选择 PNG、JPEG 或 WebP 图片">' + icon('<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8.5 8.5"/>') + '图片<input type="file" accept="image/png,image/jpeg,image/webp" aria-label="选择图片"></label><button type="button" data-action="remove" hidden>移除图片</button>' +
             '<span class="chat-hint">Ctrl ↵</span><button class="chat-send" type="button" data-action="send" title="Ctrl / ⌘ + Enter 发送">发送</button><button type="button" data-action="cancel" hidden>停止等待</button></div></div>' +
-            '<p class="chat-note chat-disclosure">文字与图片发送至 DeepSeek，按 API 用量计费。</p>' +
+            '<p class="chat-note chat-disclosure">文字与图片发送至 OpenAI，按 API 用量计费。</p>' +
             '<p class="chat-status" role="status" aria-live="polite"></p></div></div></' + wrapper + '>';
         var q = function (s) { return container.querySelector(s); };
         var action = function (s) { return q('[data-action="' + s + '"]'); };
@@ -33,7 +33,7 @@
         var fileInput = q('input[type=file]'), keyInput = q('.chat-key'), model = q('.chat-model');
         var active = false, loading = true, configured = false, chosen = null, blobUrl = null, jobId = null;
         var conversation = {conversation_id: null, revision: 0, turns: [], active_job: null};
-        var storageKey = 'iguanatex-bridge.deepseekConversation';
+        var storageKey = 'iguanatex-bridge.openaiConversation';
         var lastHistory = '', rows = {};
         function status(text) { q('.chat-status').textContent = text; }
         var guide = q('.chat-instructions'), guideSaved = null;
@@ -130,7 +130,7 @@
                     var article = node('article', 'chat-turn');
                     article.appendChild(node('div', 'chat-who', '你' + (turn.has_image ? ' · 附带图片' : '')));
                     article.appendChild(node('div', 'chat-user', turn.message));
-                    article.appendChild(node('div', 'chat-who', 'DeepSeek · ' + turn.model));
+                    article.appendChild(node('div', 'chat-who', 'OpenAI · ' + turn.model));
                     row = {answer: node('pre', 'chat-answer'), error: node('p', 'chat-turn-error'), actions: node('div', 'chat-actions')};
                     article.appendChild(row.answer); article.appendChild(row.error); article.appendChild(row.actions);
                     history.appendChild(article); rows[turn.id] = row;
@@ -178,10 +178,10 @@
                 status(active || loading ? '请等待当前操作完成后再发送，草稿已保留。' : '编辑器正在编译或写入，请稍后再发送。');
                 return;
             }
-            if (!configured) { q('.chat-settings').open = true; status('请先填写并保存 DeepSeek API Key。'); return; }
+            if (!configured) { q('.chat-settings').open = true; status('请先填写并保存 OpenAI API Key。'); return; }
             if (!prompt.value.trim() && !chosen) { status('请输入文字或选择一张图片。'); return; }
             setBusy(true);
-            status(guideSaved !== null && guide.value !== guideSaved ? '正在发送到 DeepSeek…（AI 指令有未保存的修改，本次使用已保存的版本）' : '正在发送到 DeepSeek…');
+            status(guideSaved !== null && guide.value !== guideSaved ? '正在发送到 OpenAI…（AI 指令有未保存的修改，本次使用已保存的版本）' : '正在发送到 OpenAI…');
             var sent = prompt.value;
             try {
                 var job = await options.api('chat/start', {message: prompt.value, data: chosen ? await readFile(chosen) : null,

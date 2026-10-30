@@ -11,7 +11,7 @@ from unittest.mock import patch
 import urllib.error
 import urllib.request
 
-from ai_chat import (ApiSettings, ChatJobs, DeepSeekClient, ENDPOINT, DEFAULT_MODEL, INSTRUCTIONS, INSTRUCTIONS_FILE,
+from ai_chat import (ApiSettings, ChatJobs, OpenAIClient, ENDPOINT, DEFAULT_MODEL, INSTRUCTIONS, INSTRUCTIONS_FILE,
                      MAX_INSTRUCTIONS, NoRedirect, ProjectInstructions, latex_blocks)
 from app import create_server
 from ocr import Cancelled, TERMINAL
@@ -56,8 +56,25 @@ class ApiSettingsTests(unittest.TestCase):
         self.assertFalse(self.settings.save({'clear_key': True})['configured'])
         with self.assertRaisesRegex(ValueError, 'API Key'): self.settings.credentials()
 
+    def test_deepseek_settings_and_environment_are_not_used_for_openai(self):
+        (self.settings.directory / 'deepseek-api.json').write_text(json.dumps({'api_key': 'old-deepseek-key', 'model': 'deepseek-flash'}))
+        with patch.dict(os.environ, {'DEEPSEEK_API_KEY': 'old-env-key'}):
+            self.assertFalse(self.settings.public()['configured'])
+            with self.assertRaisesRegex(ValueError, 'API Key'):
+                self.settings.credentials()
+        self.assertEqual(self.settings.public()['model'], 'gpt-6-astra')
+
+    def test_shared_key_and_precedence(self):
+        self.settings.shared_key_path.write_text('repository-secret\n')
+        self.assertEqual(self.settings.credentials()[0], 'repository-secret')
+        self.assertEqual(self.settings.public()['key_source'], '仓库密钥')
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'environment-secret'}):
+            self.assertEqual(self.settings.credentials()[0], 'environment-secret')
+            self.settings.save({'api_key': 'local-secret'})
+            self.assertEqual(self.settings.credentials()[0], 'local-secret')
+
     def test_environment_key_and_validation(self):
-        with patch.dict(os.environ, {'DEEPSEEK_API_KEY': 'env-secret'}):
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'env-secret'}):
             self.assertEqual(self.settings.public()['key_source'], '环境变量')
             self.assertEqual(self.settings.credentials()[0], 'env-secret')
             self.settings.save({'api_key': 'local'})
@@ -69,7 +86,7 @@ class ApiSettingsTests(unittest.TestCase):
         self.assertNotIn('env-secret', self.settings.path.read_text())
 
     def test_bad_environment_key_is_rejected_without_echoing_secret(self):
-        with patch.dict(os.environ, {'DEEPSEEK_API_KEY': 'private-secret\n'}):
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'private-secret\n'}):
             with self.assertRaisesRegex(ValueError, '格式') as caught:
                 self.settings.credentials()
             self.assertNotIn('private-secret', str(caught.exception))
@@ -82,17 +99,21 @@ class TransportTests(unittest.TestCase):
         opener = Opener(data); updates = []
         messages = [{'role': 'user', 'content': [{'type': 'text', 'text': '说明图片'},
                     {'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,' + image64()}}]}]
-        result = DeepSeekClient(opener).answer('secret', DEFAULT_MODEL, messages, updates.append, threading.Event())
+        result = OpenAIClient(opener).answer('secret', DEFAULT_MODEL, messages, updates.append, threading.Event())
         request = opener.calls[0][0]; body = json.loads(request.data)
         self.assertEqual(request.full_url, ENDPOINT)
         self.assertEqual(request.headers['Authorization'], 'Bearer secret')
         self.assertEqual(body['messages'][1:], messages)
         self.assertEqual(body['messages'][0]['role'], 'system')
-        self.assertEqual(body['thinking'], {'type': 'disabled'})
+        self.assertNotIn('thinking', body)
+        self.assertNotIn('max_tokens', body)
+        self.assertEqual(body['max_completion_tokens'], 8192)
+        self.assertEqual(request.full_url, 'https://api.openai.com/v1/chat/completions')
+        self.assertEqual(body['model'], 'gpt-6-astra')
         self.assertTrue(body['stream'])
         # A leading project system message is merged into the single system prompt.
         opener = Opener(data)
-        DeepSeekClient(opener).answer('secret', DEFAULT_MODEL, [{'role': 'system', 'content': '项目指令'}] + messages,
+        OpenAIClient(opener).answer('secret', DEFAULT_MODEL, [{'role': 'system', 'content': '项目指令'}] + messages,
                                       updates.append, threading.Event())
         body = json.loads(opener.calls[0][0].data)
         self.assertEqual([m['role'] for m in body['messages']], ['system', 'user'])
@@ -108,24 +129,24 @@ class TransportTests(unittest.TestCase):
         for tail in (b'', stream(delta(finish='length'), b'[DONE]'), b'data: invalid\n', stream(b'[DONE]')):
             updates = []
             with self.assertRaises(ValueError):
-                DeepSeekClient(Opener(stream(delta('partial')) + tail)).answer('secret', DEFAULT_MODEL, [], updates.append, threading.Event())
+                OpenAIClient(Opener(stream(delta('partial')) + tail)).answer('secret', DEFAULT_MODEL, [], updates.append, threading.Event())
             self.assertEqual(updates[-1], 'partial')
 
     def test_http_errors_do_not_expose_server_body_or_key_and_do_not_retry(self):
         for code in (400, 401, 402, 403, 404, 422, 429, 500):
             opener = Opener(error=urllib.error.HTTPError(ENDPOINT, code, 'secret', {}, io.BytesIO(b'secret')))
             with self.assertRaises(ValueError) as caught:
-                DeepSeekClient(opener).answer('secret', DEFAULT_MODEL, [], lambda x: None, threading.Event())
+                OpenAIClient(opener).answer('secret', DEFAULT_MODEL, [], lambda x: None, threading.Event())
             self.assertNotIn('secret', str(caught.exception))
             self.assertEqual(len(opener.calls), 1)
 
     def test_cancel_and_timeout_and_redirect(self):
         event = threading.Event(); event.set(); opener = Opener(b'')
         with self.assertRaises(Cancelled):
-            DeepSeekClient(opener).answer('key', DEFAULT_MODEL, [], lambda x: None, event)
+            OpenAIClient(opener).answer('key', DEFAULT_MODEL, [], lambda x: None, event)
         self.assertEqual(opener.calls, [])
         with self.assertRaisesRegex(ValueError, '超时'):
-            DeepSeekClient(Opener(error=TimeoutError())).answer('key', DEFAULT_MODEL, [], lambda x: None, threading.Event())
+            OpenAIClient(Opener(error=TimeoutError())).answer('key', DEFAULT_MODEL, [], lambda x: None, threading.Event())
         with self.assertRaisesRegex(ValueError, '重定向'):
             NoRedirect().redirect_request(None, None, 307, '', {}, 'https://other.example')
 

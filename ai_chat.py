@@ -1,4 +1,4 @@
-"""Local DeepSeek API client, private configuration and bounded chat jobs."""
+"""Local OpenAI API client, private configuration and bounded chat jobs."""
 from __future__ import annotations
 
 import base64
@@ -18,8 +18,8 @@ import uuid
 from ocr import Cancelled, TERMINAL, prepare_image
 from paths import state_dir
 
-ENDPOINT = 'https://api.deepseek.com/chat/completions'
-DEFAULT_MODEL = 'deepseek-flash'
+ENDPOINT = 'https://api.openai.com/v1/chat/completions'
+DEFAULT_MODEL = 'gpt-6-astra'
 MAX_MESSAGE = 8_000
 MAX_ANSWER = 200_000
 INSTRUCTIONS = ('你是 LaTeX 公式与文档助手。按用户要求解释、识别图片或修改公式，保留说明文字。'
@@ -49,7 +49,16 @@ def latex_blocks(answer):
 class ApiSettings:
     def __init__(self, directory=None):
         self.directory = Path(directory or state_dir())
-        self.path = self.directory / 'deepseek-api.json'
+        self.path = self.directory / 'openai-api.json'
+        self.shared_key_path = (self.directory if directory is not None else Path(__file__).parent) / 'shared-openai-key'
+
+    def shared_key(self):
+        try:
+            return self.shared_key_path.read_text(encoding='utf-8').strip()
+        except FileNotFoundError:
+            return ''
+        except (OSError, UnicodeDecodeError):
+            raise ValueError('仓库中的 OpenAI 密钥文件无法读取。') from None
 
     def _read(self):
         try:
@@ -57,16 +66,16 @@ class ApiSettings:
         except FileNotFoundError:
             return {}
         except (ValueError, OSError):
-            raise ValueError('DeepSeek 本机设置无法读取，请检查配置文件。') from None
+            raise ValueError('OpenAI 本机设置无法读取，请检查配置文件。') from None
         if not isinstance(data, dict):
-            raise ValueError('DeepSeek 本机设置格式错误。')
+            raise ValueError('OpenAI 本机设置格式错误。')
         return data
 
     def credentials(self):
         data = self._read()
-        key = data.get('api_key') or os.environ.get('DEEPSEEK_API_KEY', '')
+        key = data.get('api_key') or os.environ.get('OPENAI_API_KEY', '') or self.shared_key()
         if not key:
-            raise ValueError('请先展开 API 设置，填写并保存 DeepSeek API Key。')
+            raise ValueError('请先展开 API 设置，填写并保存 OpenAI API Key。')
         # Validate local/environment values too: header errors can echo credentials.
         self.validate_key(key)
         model = data.get('model', DEFAULT_MODEL)
@@ -85,9 +94,9 @@ class ApiSettings:
 
     def public(self):
         data = self._read()
-        return {'configured': bool(data.get('api_key') or os.environ.get('DEEPSEEK_API_KEY')),
-                'model': data.get('model', DEFAULT_MODEL), 'endpoint': ENDPOINT,
-                'key_source': '本机设置' if data.get('api_key') else '环境变量' if os.environ.get('DEEPSEEK_API_KEY') else ''}
+        source = '本机设置' if data.get('api_key') else '环境变量' if os.environ.get('OPENAI_API_KEY') else '仓库密钥' if self.shared_key() else ''
+        return {'configured': bool(source), 'model': data.get('model', DEFAULT_MODEL), 'endpoint': ENDPOINT,
+                'key_source': source}
 
     def save(self, req):
         data = self._read()
@@ -101,7 +110,7 @@ class ApiSettings:
             data['api_key'] = key
         data['model'] = model
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-        fd, temporary = tempfile.mkstemp(prefix='.deepseek-api-', dir=self.directory)
+        fd, temporary = tempfile.mkstemp(prefix='.openai-api-', dir=self.directory)
         try:
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False)
@@ -161,7 +170,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('API 返回了重定向，已停止请求以保护密钥。')
 
 
-class DeepSeekClient:
+class OpenAIClient:
     def __init__(self, opener=None):
         self.opener = opener or urllib.request.build_opener(NoRedirect())
 
@@ -171,8 +180,8 @@ class DeepSeekClient:
             # Keep a single system message: built-in rules, then the user's project instructions.
             system, messages = system + '\n\n' + messages[0]['content'], messages[1:]
         body = {'model': model, 'messages': [{'role': 'system', 'content': system}] + messages,
-                'thinking': {'type': 'disabled'}, 'stream': True,
-                'stream_options': {'include_usage': True}, 'max_tokens': 8192}
+                'stream': True,
+                'stream_options': {'include_usage': True}, 'max_completion_tokens': 8192}
         request = urllib.request.Request(ENDPOINT, json.dumps(body).encode(),
                     headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json', 'Accept': 'text/event-stream'})
         text, last_update, finish, usage = '', 0, None, {}
@@ -200,7 +209,7 @@ class DeepSeekClient:
                         return {'answer': text, 'latex_blocks': latex_blocks(text), 'usage': usage}
                     event = json.loads(raw)
                     if event.get('error'):
-                        raise ValueError('DeepSeek 未能完成回答，请检查设置和余额后重试。')
+                        raise ValueError('OpenAI 未能完成回答，请检查设置和余额后重试。')
                     if event.get('usage'):
                         usage = {k: v for k, v in event['usage'].items()
                                  if k in ('prompt_tokens', 'completion_tokens', 'total_tokens') and isinstance(v, int)}
@@ -220,17 +229,17 @@ class DeepSeekClient:
                     if time.monotonic() - last_update >= .15:
                         update(text); last_update = time.monotonic()
         except urllib.error.HTTPError as e:
-            errors = {401: 'API Key 无效或已失效，请重新配置 DeepSeek API Key。',
-                      402: 'DeepSeek API 余额不足，请在开放平台充值后重试。',
-                      403: '账号无权调用此接口，请检查 DeepSeek 账号权限。',
+            errors = {401: 'API Key 无效或已失效，请重新配置 OpenAI API Key。',
+                      402: 'OpenAI API 余额不足，请在开放平台充值后重试。',
+                      403: '账号无权调用此接口，请检查 OpenAI 账号权限。',
                       404: '模型不存在或账号无权使用，请在 API 设置中修改模型。',
-                      429: 'API 请求受限，请稍后重试。',
-                      400: 'API 拒绝请求，请检查模型是否支持图片输入；默认使用 deepseek-flash。',
+                      429: 'API 请求受限或账户额度不足，请检查 OpenAI 用量和账单后重试。',
+                      400: 'API 拒绝请求，请检查模型是否支持图片输入；默认使用 gpt-6-astra。',
                       422: 'API 参数不受支持，请检查模型设置。'}
             e.close()
-            raise ValueError(errors.get(e.code, 'DeepSeek API 暂时不可用，请稍后重试。')) from None
+            raise ValueError(errors.get(e.code, 'OpenAI API 暂时不可用，请稍后重试。')) from None
         except (urllib.error.URLError, TimeoutError, OSError):
-            raise ValueError('无法连接 DeepSeek API 或连接超时，请检查网络；已收到的回答保留。') from None
+            raise ValueError('无法连接 OpenAI API 或连接超时，请检查网络；已收到的回答保留。') from None
         except (json.JSONDecodeError, KeyError, TypeError, AttributeError, IndexError):
             raise ValueError('API 返回格式不符合 Chat Completions 接口，已保留收到的内容。') from None
         finally:
@@ -242,9 +251,9 @@ class ChatJobs:
     def __init__(self, directory=None, backend=None, instructions=None):
         self.settings = ApiSettings(directory)
         self.instructions = ProjectInstructions(instructions)
-        self.backend = backend or DeepSeekClient()
+        self.backend = backend or OpenAIClient()
         self.lock = threading.RLock()
-        self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='deepseek-chat')
+        self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='openai-chat')
         self.conversations, self.jobs, self.events = {}, {}, {}
         self.closed = False
 
@@ -310,7 +319,7 @@ class ChatJobs:
                     'has_image': image is not None, '_image': image, 'answer': '', 'latex_blocks': [],
                     'status': 'queued', 'error': '', 'model': model}
             turns.append(turn)
-            self.jobs[jid] = {'id': jid, 'conversation_id': cid, 'status': 'queued', 'message': '正在连接 DeepSeek API…'}
+            self.jobs[jid] = {'id': jid, 'conversation_id': cid, 'status': 'queued', 'message': '正在连接 OpenAI API…'}
             self.events[jid] = threading.Event()
             initial = dict(self.jobs[jid])
             self.executor.submit(self._run, jid, key, model, turns, turn, guide)
@@ -336,7 +345,7 @@ class ChatJobs:
                 messages.append({'role': 'user', 'content': content})
                 if t is not turn:
                     messages.append({'role': 'assistant', 'content': t['answer']})
-            state('answering', 'DeepSeek 正在回答…')
+            state('answering', 'OpenAI 正在回答…')
             result = self.backend.answer(key, model, messages, update, event)
             if event.is_set():
                 raise Cancelled()

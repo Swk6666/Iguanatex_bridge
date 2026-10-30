@@ -6,7 +6,7 @@
   <ProviderName>IguanaTex Bridge</ProviderName>
   <DefaultLocale>zh-CN</DefaultLocale>
   <DisplayName DefaultValue="IguanaTex Bridge"/>
-  <Description DefaultValue="LaTeX 公式编辑与 DeepSeek API 文字与图片对话，适用于 Mac 和 Windows PowerPoint。"/>
+  <Description DefaultValue="LaTeX 公式编辑与 OpenAI API 文字与图片对话，适用于 Mac 和 Windows PowerPoint。"/>
   <IconUrl DefaultValue="https://localhost:17864/office/icon.png"/>
   <SupportUrl DefaultValue="https://github.com/Swk6666/Iguanatex_bridge"/>
   <AppDomains><AppDomain>https://localhost:17864</AppDomain></AppDomains>
@@ -98,7 +98,7 @@
       <bt:LongStrings>
         <bt:String id="New.Description" DefaultValue="新建 LaTeX 公式，预览后插入当前幻灯片；源码与字号可由原 IguanaTeX 继续编辑。"/>
         <bt:String id="Edit.Description" DefaultValue="读取选中 IguanaTeX / Bridge 公式的源码、引擎和字号，修改后更新原位置。支持图片及单公式 Shape 组合。"/>
-        <bt:String id="Editor.Description" DefaultValue="打开公式编辑面板：输入文字或放置截图，经 DeepSeek API 生成 LaTeX，预览并插入或更新当前幻灯片中的公式。"/>
+        <bt:String id="Editor.Description" DefaultValue="打开公式编辑面板：输入文字或放置截图，经 OpenAI API 生成 LaTeX，预览并插入或更新当前幻灯片中的公式。"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
