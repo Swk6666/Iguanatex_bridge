@@ -147,6 +147,18 @@
         collapsed: false, docked: true,
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); },
         canStart: function () { return !busy; }, onSource: previewChanged}) : null;
+    if (chat && window.navigator && /Linux/i.test((window.navigator.platform || '') + ' ' + (window.navigator.userAgent || ''))) {
+        var chatPrompt = $('chatPanel').querySelector('.chat-prompt');
+        var composingChat = false;
+        chatPrompt.addEventListener('compositionstart', function () { composingChat = true; });
+        chatPrompt.addEventListener('compositionend', function () { composingChat = false; });
+        chatPrompt.addEventListener('pointerdown', function (e) {
+            // Linux WPS can briefly deactivate this dialog on the first click, committing IME preedit.
+            // Request activation only on an actual click, before typing; never interrupt a composition.
+            if (e.button !== 0 || e.isPrimary === false || e.isTrusted === false || composingChat) return;
+            try { window.focus(); } catch (ignored) {}
+        });
+    }
     $('previewButton').onclick = function () { return run(renderFormula); };
     $('aiFix').onclick = function () {
         if (!compileError || !chat) return;

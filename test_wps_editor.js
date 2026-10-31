@@ -4,13 +4,16 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const layout = require('./wps_addin/adapter.js').layout;
 async function fixture(edit=true, source='x', failRender=false, options={}) {
-    const nodes={}, renders=[], replacements=[], closed=[], state={failRender};
+    const nodes={}, renders=[], replacements=[], closed=[], focused=[], state={failRender};
+    const chatPrompt={value:'',events:{},addEventListener(type, handler){this.events[type]=handler;}};
     const storage = options.storage || new Map();
     const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700,clientHeight:112});
     get('pointSize').value='18';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='font';
+    get('chatPanel').querySelector=selector=>selector==='.chat-prompt'?chatPrompt:null;
     const ctx={identity:{presentation:'deck',slide_id:1,shape_id:1},signature:'shape',shape:edit?{Id:1,Type:28,Width:30,Height:18.4,Left:70,Top:90}:null,slide:{SlideIndex:1},sourceData:{tags:{LATEXADDIN:'x'}},
         presentation:{PageSetup:{SlideWidth:960,SlideHeight:540}}};
-    const sandbox={URLSearchParams,location:{search:options.draft?'?mode=draft':edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},addEventListener(){},
+    const sandbox={URLSearchParams,location:{search:options.draft?'?mode=draft':edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},focus(){focused.push(true);},addEventListener(){},
+        navigator:{platform:options.platform||'Linux x86_64',userAgent:options.userAgent||''},
         localStorage:{getItem(k){if(options.noStorage)throw Error('storage disabled');return storage.get(k);},setItem(k,v){if(options.noStorage)throw Error('storage disabled');storage.set(k,v);}}},
         document:{body:{classList:{add(){}}},getElementById:get,querySelectorAll(){return[];},addEventListener(){}},
         fetch:async(url,request)=>({ok:!(state.failRender && url==='/api/wps/render'),json:async()=>{
@@ -40,7 +43,7 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     sandbox.IguanaLatex=sandbox.window.IguanaLatex;
     vm.runInNewContext(fs.readFileSync('wps_addin/editor.js','utf8'),sandbox);
     await new Promise(resolve=>setImmediate(resolve));
-    return {get,ctx,renders,replacements,storage,closed,state};
+    return {get,ctx,renders,replacements,storage,closed,focused,chatPrompt,state};
 }
 (async()=>{
     {
@@ -176,6 +179,27 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
         assert.equal(f.get('aiFix').hidden,true);
     }
     {
+        const f=await fixture(true,'x',false,{chat:[]});
+        const input=f.chatPrompt, click={button:0,isPrimary:true,isTrusted:true,
+            preventDefault(){throw Error('activation must not cancel the click');}};
+        input.value='保留拼音和草稿';
+        input.events.pointerdown(click);
+        assert.equal(f.focused.length,1,'a click requests activation in Linux WPS');
+        assert.equal(input.value,'保留拼音和草稿');
+        input.events.compositionstart();input.events.pointerdown(click);
+        assert.equal(f.focused.length,1,'an active IME composition must not be interrupted');
+        input.events.compositionend();input.events.pointerdown(click);
+        assert.equal(f.focused.length,2);
+        input.events.pointerdown({...click,button:2});
+        input.events.pointerdown({...click,isPrimary:false});
+        input.events.pointerdown({...click,isTrusted:false});
+        assert.equal(f.focused.length,2,'secondary or synthetic clicks must not activate the window');
+        for (const platform of ['MacIntel','Win32']) {
+            const other=await fixture(true,'x',false,{chat:[],platform});
+            assert.equal(other.chatPrompt.events.pointerdown,undefined,platform+' is unaffected');
+        }
+    }
+    {
         // 100% preview by default: a formula taller than the canvas must not be shrunk to match other sizes.
         const storage=new Map();const f=await fixture(false,'x',false,{storage});
         const shown=async size=>{f.get('pointSize').value=String(size);f.get('pointSize').oninput();await f.get('previewButton').onclick();return parseFloat(f.get('formulaImage').style.height);};
@@ -186,5 +210,5 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
         assert.ok(parseFloat(f.get('formulaImage').style.height)<=112-24+1e-9);assert.match(f.get('previewSize').textContent,/缩小至 \d+%/);
         f.get('previewZoom').onclick();assert.ok(Math.abs(parseFloat(f.get('formulaImage').style.height)-h14)<1e-9);
     }
-    console.log('13 WPS editor interaction tests passed');
+    console.log('14 WPS editor interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
