@@ -1,6 +1,6 @@
 # IguanaTex Bridge · 个人项目
 
-在 WPS 工具栏中打开公式编辑器，编写完整 LaTeX 文档、预览并插入或更新公式。内置 DeepSeek API 对话，支持文字、截图和连续追问，显示完整回答并按需采用 LaTeX。另有独立桌面 GUI 和 macOS / Windows PowerPoint 加载项，支持 SVG / PNG、字号与源码保存，以及与原 IguanaTeX 的源码兼容。
+在 WPS 工具栏中打开公式编辑器，编写完整 LaTeX 文档、预览并插入或更新公式。内置 OpenAI API 对话，支持文字、截图和连续追问，显示完整回答并按需采用 LaTeX。另有独立桌面 GUI 和 macOS / Windows PowerPoint 加载项，支持 SVG / PNG、字号与源码保存，以及与原 IguanaTeX 的源码兼容。
 
 当前版本 **0.6.1**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
 
@@ -10,7 +10,7 @@
 
 0.4.2 修复公式更新时的比例失真；WPS 预览和操作按钮固定可见，新建公式记住上次字号（首次 18 pt），成功写入后自动关闭窗口。
 
-0.5.0 将 WPS、PowerPoint 加载项与浏览器编辑器的 AI 面板改为 **DeepSeek API**，默认 `deepseek-flash`，无需 Chrome 或网页登录。首次在面板的“API 设置”中保存 **DeepSeek API Key**。详见 [API 对话使用说明](docs/API_CHAT.md)。
+WPS、PowerPoint 加载项与浏览器编辑器的 AI 面板使用 **OpenAI API**（0.5.0 时为 DeepSeek API），默认模型 `gpt-6-astra`，无需 Chrome 或网页登录。可在面板的“API 设置”中保存本机 **OpenAI API Key**，也可使用环境变量或仓库共享密钥。详见 [API 对话使用说明](docs/API_CHAT.md)。
 
 ## 从这里开始
 
@@ -18,7 +18,7 @@
 | --- | --- |
 | 启动独立桌面 GUI（推荐） | [桌面版使用说明](docs/DESKTOP.md) |
 | 在 Mac / Windows PowerPoint 使用 | [Office 安装说明](docs/INSTALL_OFFICE.md) |
-| 在插件内用文字、图片与 AI 对话 | [DeepSeek API 对话](docs/API_CHAT.md) |
+| 在插件内用文字、图片与 AI 对话 | [OpenAI API 对话](docs/API_CHAT.md) |
 | 独立桌面 GUI 的旧版截图识别 | [DeepSeek 网页识别](docs/DEEPSEEK.md) |
 | 在另一台 Ubuntu 安装、升级、卸载、排查故障 | [Ubuntu 安装说明](docs/INSTALL_UBUNTU.md) |
 | 日常编辑公式、Shape、SVG、字号与跨平台使用 | [使用手册](README_中文.md) |
@@ -41,7 +41,7 @@ bash install.sh
 
 已有本项目的 Git 克隆时，直接在该目录执行 `bash install.sh`。安装位置不限于 `~/Applications/`，无需再下载 ZIP、解压或搬动目录。若电脑没有 Git，先运行 `sudo apt update && sudo apt install -y git`；私有仓库的首次身份验证见 [完整安装说明](docs/INSTALL_UBUNTU.md)。
 
-API 对话不需要浏览器或额外 Python 依赖。安装后在插件里填写 DeepSeek API Key；公式编译无需密钥。独立 Qt 桌面 GUI 仍使用旧版网页识别，只有该模式需要 `--with-ocr`、Chrome 和网页登录。
+API 对话不需要浏览器或额外 Python 依赖。安装后在插件里填写 OpenAI API Key（未填写时使用仓库共享密钥）；公式编译无需密钥。独立 Qt 桌面 GUI 仍使用旧版网页识别，只有该模式需要 `--with-ocr`、Chrome 和网页登录。
 
 脚本会检查并补齐 Ubuntu 的 Python / venv、XeLaTeX、中文和扩展宏包，然后安装 Python 依赖、注册 WPS 插件并配置后台自动启动。**用普通用户运行，不要用 `sudo bash install.sh`**；只有缺少系统包时脚本才调用 `sudo`，可能需要输入系统密码。TeX Live 首次下载较大，请等待完成。
 
@@ -57,7 +57,7 @@ desktop.py / desktop_support.py      沿用 WPS 布局的独立桌面 GUI
 start_desktop*                      macOS / Windows / Ubuntu 桌面启动入口
 wps_addin/                           WPS 功能区和公式编辑窗口
 office_addin/                        Mac / Windows PowerPoint 加载项
-ai_chat.py / shared/chat.*           DeepSeek API、多轮对话与本机密钥设置
+ai_chat.py / shared/chat.*           OpenAI API、多轮对话与本机密钥设置
 ocr.py / shared/ocr.*                独立 Qt GUI 保留的旧版网页识别
 setup_office.py / start_office*       Office HTTPS 证书、清单与启动入口
 install.sh / install_wps*            一键安装、注册和自动启动

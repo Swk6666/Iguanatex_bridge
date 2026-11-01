@@ -18,6 +18,7 @@
         if (!response.ok) throw new Error(result.error || '本地服务不可用。');
         return result;
     }
+    function notify(text) { if (root.ShowBridgeMessage) root.ShowBridgeMessage(text); else alert(text); }
     function checkCancelled() { if (cancelled) { var e = new Error('已取消'); e.cancelled = true; throw e; } }
     function friendly(e) {
         var text = e && e.message ? e.message : String(e);
@@ -146,18 +147,18 @@
         var detail = label + '：成功 ' + succeeded + '，失败 ' + failed + '，跳过 ' + skipped + (remaining ? '，未处理 ' + remaining : '') + '。';
         if (errors.length) detail += '\n' + errors.slice(0, 20).join('\n');
         show(label + ' ' + succeeded + '/' + total, detail);
-        if (total > 1 || failed) alert(detail);
+        if (total > 1 || failed) notify(detail);
     }
     function start() {
-        if (running) { alert('图片转公式正在进行，请等待完成或点击“取消转换”。'); return; }
+        if (running) { notify('图片转公式正在进行，请等待完成或点击“取消转换”。'); return; }
         var items;
         try { items = root.IguanaWps.imageContexts(); }
-        catch (e) { show('转换未开始', friendly(e)); alert(friendly(e)); return; }
+        catch (e) { show('转换未开始', friendly(e)); notify(friendly(e)); return; }
         running = true; cancelled = false;
         show('准备转换 0/' + items.length, '正在准备所选图片。');
         batch(items).catch(function (e) {
             var detail = '转换未完成，原图已保留。' + friendly(e);
-            show('转换失败', detail); alert(detail);
+            show('转换失败', detail); notify(detail);
         }).finally(function () { running = false; currentJob = null; });
     }
     function cancel() {

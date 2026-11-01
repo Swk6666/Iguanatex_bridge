@@ -4,19 +4,19 @@
     <tabs>
       <tab id="IguanaTexBridgeTab" label="IguanaTex">
         <group id="IguanaTexFormulas" label="LaTeX 公式">
-          <button id="IguanaNew" label="新建公式" size="large" imageMso="FileNew" onAction="OnNewFormula" screentip="在当前幻灯片插入 LaTeX 公式"/>
-          <button id="IguanaRecognize" label="图片转公式" size="large" imageMso="PictureInsert" onAction="OnRecognizeImage" screentip="识别选中的图片并生成可编辑公式；图片将发送至 OpenAI"/>
-          <button id="IguanaEdit" label="编辑选中公式" size="large" imageMso="FileSaveAs" onAction="OnEditFormula" screentip="读取选中图片内的 IguanaTex 源码"/>
+          <button id="IguanaNew" label="新建公式" size="large" getImage="GetImage" onAction="OnNewFormula" screentip="在当前幻灯片插入 LaTeX 公式"/>
+          <button id="IguanaRecognize" label="图片转公式" size="large" getImage="GetImage" onAction="OnRecognizeImage" screentip="识别选中的图片并生成可编辑公式；图片将发送至 OpenAI"/>
+          <button id="IguanaEdit" label="编辑选中公式" size="large" getImage="GetImage" onAction="OnEditFormula" screentip="读取选中图片内的 IguanaTex 源码"/>
         </group>
         <group id="IguanaTexAutomation" label="转换管理">
-          <button id="IguanaStatus" getLabel="GetConversionStatus" size="large" imageMso="Info" onAction="OnConversionStatus" screentip="查看后台转换进度与结果"/>
-          <button id="IguanaCancel" label="取消转换" imageMso="CancelRequest" onAction="OnCancelConversion"/>
-          <button id="IguanaSettings" label="转换设置" imageMso="Settings" onAction="OnConversionSettings"/>
-          <button id="IguanaDraft" label="编辑失败草稿" imageMso="FileSaveAs" onAction="OnEditDraft" screentip="选中转换失败的原图，继续编辑已保存的草稿"/>
+          <button id="IguanaStatus" getLabel="GetConversionStatus" size="large" getImage="GetImage" onAction="OnConversionStatus" screentip="查看后台转换进度与结果"/>
+          <button id="IguanaCancel" label="取消转换" getImage="GetImage" onAction="OnCancelConversion"/>
+          <button id="IguanaSettings" label="转换设置" getImage="GetImage" onAction="OnConversionSettings"/>
+          <button id="IguanaDraft" label="编辑失败草稿" getImage="GetImage" onAction="OnEditDraft" screentip="选中转换失败的原图，继续编辑已保存的草稿"/>
         </group>
         <group id="IguanaTexCompatibility" label="跨平台">
-          <button id="IguanaProtect" label="检查与同步源码" size="large" imageMso="FileCompatibilityChecker" onAction="OnProtectFormulas"/>
-          <button id="IguanaHelp" label="环境与帮助" size="large" imageMso="Help" onAction="OnBridgeHelp"/>
+          <button id="IguanaProtect" label="检查与同步源码" size="large" getImage="GetImage" onAction="OnProtectFormulas"/>
+          <button id="IguanaHelp" label="环境与帮助" size="large" getImage="GetImage" onAction="OnBridgeHelp"/>
         </group>
       </tab>
     </tabs>

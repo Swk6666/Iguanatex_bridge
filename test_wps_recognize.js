@@ -8,11 +8,11 @@ async function scenario(mode) {
     let jobs=0, requestNumber=0, dialogCount=0, currentShape=0, cancelledJob=false;
     const settings={point_size:24,color:'#AABBCC',align:'center',review:['review','skip','review-cancel'].includes(mode)};
     const sandbox={window:{location:{href:'http://127.0.0.1:17863/wps/index.html'},wps:{ShowDialog(){dialogCount++;}},
-        UpdateRecognitionUI(){snapshots.push(sandbox.window.IguanaRecognize.status().label);},IguanaWps:{
+        UpdateRecognitionUI(){snapshots.push(sandbox.window.IguanaRecognize.status().label);},ShowBridgeMessage(message){alerts.push(message);},IguanaWps:{
             imageContexts(){return contexts.map(ctx=>({ctx}));},
             exportImage(ctx,path){currentShape=ctx.identity.shape_id;assert.equal(path,'/tmp/img.png');if(mode==='batch' && currentShape===2)throw Error('WPS 无法导出');},
             validate(){},replace(ctx,data){replaced.push({ctx,data});}
-        }},alert(message){alerts.push(message);},setTimeout,
+        }},alert(message){throw Error('modal alert: '+message);},setTimeout,
         fetch:async(url,request)=>{
             calls.push(url);const body=request && request.body?JSON.parse(request.body):{};
             let result={},ok=true;

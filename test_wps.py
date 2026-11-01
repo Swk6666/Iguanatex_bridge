@@ -169,6 +169,26 @@ class WpsIntegrationTests(unittest.TestCase):
             with urllib.request.urlopen(self.base + '/wps/' + asset) as response:
                 self.assertEqual(response.status, 200)
                 self.assertNotIn(self.token.encode(), response.read())
+        # The version comes from the VERSION file only.
+        version = Path('VERSION').read_text(encoding='utf-8').strip()
+        with urllib.request.urlopen(self.base + '/health') as response:
+            self.assertEqual(json.load(response)['version'], version)
+        with urllib.request.urlopen(self.base + '/wps/editor.js') as response:
+            script = response.read().decode()
+        self.assertNotIn('__VERSION__', script)
+        self.assertIn('IguanaTex Bridge ' + version, script)
+        # Every ribbon button uses one of our icons; WPS shows "?" for unknown imageMso names.
+        import re
+        ribbon = Path('wps_addin/ribbon.xml').read_text(encoding='utf-8')
+        self.assertNotIn('imageMso', ribbon)
+        buttons = re.findall(r'<button [^>]*>', ribbon)
+        self.assertTrue(buttons)
+        for button in buttons:
+            self.assertIn('getImage="GetImage"', button)
+        for name in ('new', 'recognize', 'edit', 'status', 'cancel', 'settings', 'draft', 'protect', 'help'):
+            with urllib.request.urlopen(self.base + '/wps/images/' + name + '.svg') as response:
+                self.assertEqual(response.headers['Content-Type'], 'image/svg+xml')
+                self.assertTrue(response.read().startswith(b'<svg'))
         with self.assertRaises(urllib.error.HTTPError) as cm:
             urllib.request.urlopen(self.base + '/wps/../app.py')
         self.assertEqual(cm.exception.code, 404)

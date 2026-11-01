@@ -18,7 +18,7 @@ from PIL import Image, PngImagePlugin
 from bridge import (Deck, EMU_PT, NS, PNG_KEY, Rendered, decode_meta, dump,
                     encode_meta, xml)
 from ocr import MAX_IMAGE_BYTES, prepare_image
-from paths import state_dir
+from paths import VERSION, state_dir
 from wps_support import WpsBridge
 
 
@@ -36,7 +36,7 @@ class LocalService:
         self.token = None
         try:
             health = self._request('/health', timeout=1)
-            if health.get('app') != 'IguanaTexBridge' or health.get('version') != '0.6.1':
+            if health.get('app') != 'IguanaTexBridge' or health.get('version') != VERSION:
                 raise ValueError('端口被其他服务或旧版本占用。')
         except (OSError, URLError, ValueError):
             from app import create_server

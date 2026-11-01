@@ -3,6 +3,9 @@ import os
 from pathlib import Path
 import sys
 
+# The single source of the release number; scripts/build_release.py reads the same file.
+VERSION = (Path(__file__).resolve().parent / 'VERSION').read_text(encoding='utf-8').strip()
+
 
 def state_dir():
     if sys.platform == 'win32':

@@ -71,6 +71,19 @@ const data = {path:'/tmp/test.png',tags:{LATEXADDIN:'new CaseSensitive source'},
     assert.equal(sandbox.OnNewFormula(),true); assert.equal(calls.length,0); assert.equal(queue.length,1);
     queue[0](); assert.equal(calls.length,1); assert.match(calls[0][0], /editor.html\?mode=new&session=/);
     assert.equal(calls[0][4],false); // Do not lock the WPS host in a modal loop.
+    assert.deepEqual([calls[0][2],calls[0][3]],[920,760]);
+    sandbox.OnConversionSettings(); queue[1]();
+    assert.match(calls[1][0], /workflow.html\?mode=settings&session=/); assert.deepEqual([calls[1][2],calls[1][3],calls[1][4]],[600,540,false]);
+    // Conversion details open a non-modal window instead of a blocking alert().
+    sandbox.window.IguanaRecognize={status(){return {detail:'转换完成：成功 1'};}};
+    sandbox.OnConversionStatus(); queue[2]();
+    assert.match(calls[2][0], /workflow.html\?mode=message&session=\d+#/); assert.equal(decodeURIComponent(calls[2][0].split('#')[1]),'转换完成：成功 1');
+    assert.equal(calls[2][4],false);
+    // Each ribbon button maps to its own SVG file (never the fallback by accident).
+    const ids=[...fs.readFileSync('./wps_addin/ribbon.xml','utf8').matchAll(/<button id="([^"]+)"/g)].map(m=>m[1]);
+    const icons=ids.map(Id=>sandbox.GetImage({Id}));
+    assert.equal(new Set(icons).size,ids.length);
+    for(const icon of icons){assert.match(icon,/^images\/[a-z]+\.svg$/);assert.ok(fs.existsSync('./wps_addin/'+icon),icon);}
 }
 {
     const f=fixture();group(f.old,[glyph(f),glyph(f,'')]);f.svg();

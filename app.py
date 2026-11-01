@@ -15,6 +15,10 @@ from bridge import Deck, render, public_records, doctor
 from wps_support import WpsBridge, WpsWorkflow
 from ocr import OcrJobs
 from ai_chat import ChatJobs
+from paths import VERSION
+
+# Ribbon icons served to WPS; see GetImage in wps_addin/main.js.
+WPS_ICONS = ('new', 'recognize', 'edit', 'status', 'cancel', 'settings', 'draft', 'protect', 'help')
 from latex_source import complete_source, replace_formula, DEFAULT_FORMULA
 
 
@@ -63,7 +67,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 self.reply({'token': token})
                 return
             if path == '/health':
-                self.reply({'app': 'IguanaTexBridge', 'version': '0.6.1'})
+                self.reply({'app': 'IguanaTexBridge', 'version': VERSION})
                 return
             assets = {'/': ('ui.html', 'text/html; charset=utf-8'),
                       '/wps/': ('wps_addin/index.html', 'text/html; charset=utf-8'),
@@ -90,12 +94,14 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       '/office/taskpane.js': ('office_addin/taskpane.js', 'application/javascript'),
                       '/office/style.css': ('office_addin/style.css', 'text/css'),
                       '/office/icon.png': ('office_addin/icon.png', 'image/png')}
+            assets.update({f'/wps/images/{name}.svg': (f'wps_addin/images/{name}.svg', 'image/svg+xml')
+                           for name in WPS_ICONS})
             if path not in assets:
                 self.reply({'error': 'Not found'}, 404)
                 return
             filename, content_type = assets[path]
             asset = Path(__file__).parent.joinpath(filename)
-            data = asset.read_bytes() if content_type == 'image/png' else asset.read_text(encoding='utf-8').replace('__TOKEN__', token).encode()
+            data = asset.read_bytes() if content_type == 'image/png' else asset.read_text(encoding='utf-8').replace('__TOKEN__', token).replace('__VERSION__', VERSION).encode()
             self.send_response(200)
             self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(data)))
@@ -272,7 +278,7 @@ def main():
         threading.Thread(target=secure.serve_forever, daemon=True).start()
         print(f'PowerPoint 加载项：https://localhost:{secure.server_port}/office/', flush=True)
     url = f'http://127.0.0.1:{server.server_port}/'
-    print('IguanaTex Bridge 0.6.1，按 Ctrl+C 退出。', flush=True)
+    print(f'IguanaTex Bridge {VERSION}，按 Ctrl+C 退出。', flush=True)
     print('本地界面：' + url, flush=True)
     if not args.no_browser:
         webbrowser.open(url)

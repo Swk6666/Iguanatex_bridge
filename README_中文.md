@@ -122,7 +122,7 @@ Windows / macOS 推荐使用自己的桌面 GUI 或 Office 加载项；如果已
 
 适配字段包括 `LATEXADDIN`、`LATEXENGINEID`、`IGUANATEXSIZE`、`BITMAPVECTOR`、`OUTPUTTYPE`、`OUTPUTDPI`、`ORIGINALWIDTH`、`ORIGINALHEIGHT` 等。使用完整文档源码，不写入另一台机器的临时目录配置。
 
-源码同时写入原生标签、替代文字和 PNG / SVG 文件元数据。本机 WPS 保存后均已验证保留。插件可从替代文字恢复标签；独立编辑器还支持从 PNG 恢复（尚不读取 SVG 文件元数据备份）。若全部源码信息被删除，可用新增 DeepSeek 图片识别重新转写公式；它不能保证恢复与原稿完全相同的源码。
+源码同时写入原生标签、替代文字和 PNG / SVG 文件元数据。本机 WPS 保存后均已验证保留。插件可从替代文字恢复标签；独立编辑器还支持从 PNG 恢复（尚不读取 SVG 文件元数据备份）。若全部源码信息被删除，可用“图片转公式”（OpenAI 识别）重新转写公式；它不能保证恢复与原稿完全相同的源码。
 
 ### Windows / Mac 也使用 WPS 时
 

@@ -43,6 +43,15 @@ wps_addin/editor.html
 wps_addin/editor.js
 wps_addin/index.html
 wps_addin/main.js
+wps_addin/images/cancel.svg
+wps_addin/images/draft.svg
+wps_addin/images/edit.svg
+wps_addin/images/help.svg
+wps_addin/images/new.svg
+wps_addin/images/protect.svg
+wps_addin/images/recognize.svg
+wps_addin/images/settings.svg
+wps_addin/images/status.svg
 wps_addin/ribbon.xml
 wps_addin/recognize.js
 wps_addin/workflow.html
