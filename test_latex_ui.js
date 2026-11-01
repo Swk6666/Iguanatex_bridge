@@ -27,5 +27,24 @@ const latex = sandbox.IguanaLatex;
     field.value = 'keep my code';
     await assert.rejects(latex.prepare(field, async () => { throw Error('service unavailable'); }), /unavailable/);
     assert.equal(field.value, 'keep my code');
-    console.log('5 full-document UI tests passed');
+    for (const original of [full, '% \\begin{document} is a comment\n' + full,
+            full.replace(/\n/g, '\r\n'), full.replace('\\begin{document}\n', '\\begin{document}% a comment\n')]) {
+        assert.equal(latex.lineWidth(original), 1);
+        assert.equal(latex.withLineWidth(original, 1), original);
+        const reduced = latex.withLineWidth(original, '0.6');
+        assert.equal(latex.lineWidth(reduced), 0.6);
+        assert.match(reduced, /\\setlength\{\\textwidth\}\{0\.6\\textwidth\}/);
+        assert.equal(latex.withLineWidth(reduced, 0.6), reduced, 'repeated previews must not scale twice');
+        const modified = latex.withLineWidth(reduced, 0.75);
+        assert.equal(latex.lineWidth(modified), 0.75);
+        assert.equal(latex.withLineWidth(modified, 1), original, 'restoring width must preserve the original document');
+    }
+    for (const value of ['', '0', '0.09', '1.1', 'NaN', 'Infinity']) {
+        assert.throws(() => latex.withLineWidth(full, value), /0\.1–1/);
+    }
+    const custom = latex.withLineWidth(full, 0.6).replace('\\setlength{\\hsize}{\\textwidth}', '% user modified settings');
+    assert.equal(latex.lineWidth(custom), null);
+    assert.throws(() => latex.withLineWidth(custom, 0.7), /已被修改/);
+    assert.throws(() => latex.withLineWidth('no document', 0.6), /document/);
+    console.log('full-document and line-width UI tests passed');
 })().catch(e => { console.error(e); process.exitCode = 1; });

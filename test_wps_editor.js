@@ -7,12 +7,13 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
     const nodes={}, renders=[], replacements=[], closed=[], focused=[], state={failRender};
     const chatPrompt={value:'',events:{},addEventListener(type, handler){this.events[type]=handler;}};
     const storage = options.storage || new Map();
-    const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700,clientHeight:112});
+    const get=id=>nodes[id]||(nodes[id]={value:'',hidden:false,disabled:false,style:{},textContent:'',clientWidth:700,clientHeight:112,
+        dispatchEvent(e){if(e.type==='input' && this.oninput)this.oninput(e);}});
     get('pointSize').value='18';get('engine').value='xelatex';get('output').value='svg';get('sizeMode').value='font';
     get('chatPanel').querySelector=selector=>selector==='.chat-prompt'?chatPrompt:null;
     const ctx={identity:{presentation:'deck',slide_id:1,shape_id:1},signature:'shape',shape:edit?{Id:1,Type:28,Width:30,Height:18.4,Left:70,Top:90}:null,slide:{SlideIndex:1},sourceData:{tags:{LATEXADDIN:'x'}},
         presentation:{PageSetup:{SlideWidth:960,SlideHeight:540}}};
-    const sandbox={URLSearchParams,location:{search:options.draft?'?mode=draft':edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},focus(){focused.push(true);},addEventListener(){},
+    const sandbox={URLSearchParams,Event:class{constructor(type){this.type=type;}},location:{search:options.draft?'?mode=draft':edit?'?mode=edit':'?mode=new'},window:{close(){closed.push(true);},focus(){focused.push(true);},addEventListener(){},
         navigator:{platform:options.platform||'Linux x86_64',userAgent:options.userAgent||''},
         localStorage:{getItem(k){if(options.noStorage)throw Error('storage disabled');return storage.get(k);},setItem(k,v){if(options.noStorage)throw Error('storage disabled');storage.set(k,v);}}},
         document:{body:{classList:{add(){}}},getElementById:get,querySelectorAll(){return[];},addEventListener(){}},
@@ -52,6 +53,26 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
         await f.get('applyButton').onclick();assert.equal(f.replacements.length,1);assert.equal(f.closed.length,1);assert.equal(f.renders[0].color,'#DD2244');assert.equal(f.ctx.align,'right');
         const bad=await fixture(true,'x',false,{draft:true,badSignature:true});
         assert.match(bad.get('status').textContent,/图片已改变/);assert.equal(bad.replacements.length,0);
+    }
+    {
+        const original='\\documentclass{article}\n\\usepackage{amsmath}\n\\begin{document}\nA long paragraph.\n\\end{document}\n';
+        const f=await fixture(true,original);
+        assert.equal(f.get('lineWidth').value,'1');
+        f.get('lineWidth').value='0.6';f.get('lineWidth').oninput();
+        assert.equal(f.get('source').value,original,'editing the control preserves source until preview');
+        await f.get('previewButton').onclick();
+        const narrow=f.get('source').value;
+        assert.match(narrow,/\\setlength\{\\textwidth\}\{0\.6\\textwidth\}/);
+        assert.equal(f.renders[0].source,narrow,'visible source is exactly what gets compiled');
+        await f.get('previewButton').onclick();
+        assert.equal(f.renders.length,1,'unchanged width uses the cached preview');
+        const reopened=await fixture(true,narrow);
+        assert.equal(reopened.get('lineWidth').value,'0.6','saved formulas restore their width');
+        reopened.get('lineWidth').value='1';reopened.get('lineWidth').oninput();
+        await reopened.get('previewButton').onclick();assert.equal(reopened.get('source').value,original);
+        f.get('lineWidth').value='2';f.get('lineWidth').oninput();await f.get('previewButton').onclick();
+        assert.match(f.get('status').textContent,/行宽比例须在/);
+        assert.equal(f.get('source').value,narrow,'invalid values must not rewrite the source');
     }
     {
         const f=await fixture();assert.equal(f.get('sizeLabel').hidden,false);
@@ -210,5 +231,5 @@ async function fixture(edit=true, source='x', failRender=false, options={}) {
         assert.ok(parseFloat(f.get('formulaImage').style.height)<=112-24+1e-9);assert.match(f.get('previewSize').textContent,/缩小至 \d+%/);
         f.get('previewZoom').onclick();assert.ok(Math.abs(parseFloat(f.get('formulaImage').style.height)-h14)<1e-9);
     }
-    console.log('14 WPS editor interaction tests passed');
+    console.log('15 WPS editor interaction tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -3,7 +3,7 @@
     var $ = function (id) { return document.getElementById(id); };
     var token = null;
     var mode = new URLSearchParams(location.search).get('mode') || 'new';
-    var ctx = null, preview = null, previewKey = '', busy = false, appliedPointSize = 18, draftStyle = null;
+    var ctx = null, preview = null, previewKey = '', busy = false, appliedPointSize = 18, draftStyle = null, widthDirty = false;
     var sizePreferenceKey = 'iguanatex-bridge.pointSize';
     function validSize(value) { var n = Number(value); return isFinite(n) && n >= 4 && n <= 200; }
     function preferredSize() {
@@ -38,7 +38,7 @@
     var compileError = null;
     function compileApi(path, data) { return api(path, data).catch(function (e) { e.compile = true; throw e; }); }
     function setCompileError(info) { compileError = info; $('aiFix').hidden = !info || !chat; }
-    function key() { return JSON.stringify([$('source').value, $('engine').value, $('pointSize').value, $('output').value]); }
+    function key() { return JSON.stringify([$('source').value, $('engine').value, $('pointSize').value, $('output').value, $('lineWidth').value]); }
     function clearPreview(message) {
         preview = null; previewKey = '';
         $('formulaImage').hidden = true; $('formulaImage').src = '';
@@ -46,7 +46,15 @@
         $('previewHint').hidden = false; $('previewHint').textContent = message;
     }
     function previewChanged() { setCompileError(null); clearPreview('内容或设置已修改，请重新预览。'); }
-    $('source').oninput = previewChanged;
+    function syncLineWidth() {
+        var ratio = IguanaLatex.lineWidth($('source').value);
+        $('lineWidth').value = ratio === null ? '' : String(ratio);
+        $('lineWidth').placeholder = ratio === null ? '自定义' : '1';
+        widthDirty = false;
+    }
+    function sourceChanged() { if (!widthDirty) syncLineWidth(); previewChanged(); }
+    $('source').oninput = sourceChanged;
+    $('lineWidth').oninput = function () { widthDirty = true; previewChanged(); };
     $('engine').onchange = previewChanged;
     $('output').onchange = previewChanged;
     function sizeMode() { return ctx && ctx.shape ? $('sizeMode').value : 'font'; }
@@ -111,6 +119,15 @@
             if (!isFinite(pointSize) || pointSize < 4 || pointSize > 200) throw new Error('字号须在 4–200 pt 之间。');
             setCompileError(null);
             await IguanaLatex.prepare($('source'), compileApi);
+            if (widthDirty) {
+                var updatedSource = IguanaLatex.withLineWidth($('source').value, $('lineWidth').value);
+                widthDirty = false;
+                if (updatedSource !== $('source').value) {
+                    $('source').value = updatedSource;
+                    $('source').dispatchEvent(new Event('input', {bubbles: true}));
+                }
+                syncLineWidth();
+            }
             var requestKey = key();
             if (preview && previewKey === requestKey) { showPreview(preview); return preview; }
             clearPreview('正在编译当前源码…');
@@ -146,7 +163,7 @@
     var chat = window.IguanaChat ? window.IguanaChat.mount($('chatPanel'), {api: api, source: $('source'),
         collapsed: false, docked: true,
         prepareSource: function (source, current) { return IguanaLatex.merge(source, current, api); },
-        canStart: function () { return !busy; }, onSource: previewChanged}) : null;
+        canStart: function () { return !busy; }, onSource: sourceChanged}) : null;
     if (chat && window.navigator && /Linux/i.test((window.navigator.platform || '') + ' ' + (window.navigator.userAgent || ''))) {
         var chatPrompt = $('chatPanel').querySelector('.chat-prompt');
         var composingChat = false;
@@ -240,7 +257,7 @@
             IguanaLatex.selectBody($('source'));
             status('编辑完整 LaTeX 文档：可修改宏包和正文，预览后插入当前幻灯片。');
         }
-        sizeHint();
+        syncLineWidth(); sizeHint();
     }
     init().catch(function (e) {
         $('editor').hidden = true;

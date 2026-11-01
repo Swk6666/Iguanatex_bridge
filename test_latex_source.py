@@ -51,6 +51,39 @@ $\delta$ 为广义力误差，包括模型参数偏差、状态与力矩测量�
         source = complete_source(r'\frac{a}{b}')
         self.assertEqual(render(source, 'pdflatex').source, source)
 
+    def test_line_width_reflows_chinese_and_is_embedded_as_native_source(self):
+        source = r'''\documentclass[10pt]{article}
+\usepackage[a4paper,margin=1.5cm]{geometry}
+\usepackage[fontset=fandol]{ctex}
+\usepackage{amsmath}
+\pagestyle{empty}
+\begin{document}
+这是一段中文和数学符号混合的较长说明，用于检查正文能否按新的行宽自动换行。我们希望保留字号和所有内容，也希望 $\tau_m$ 等行内数学符号保持清楚，并确保完整源码可以跨平台保存。
+\[
+\boxed{u_{k}=u_{k-1}+g_F(q_k)-\tau_{m,k}}
+\]
+这里还有一段说明，模拟幻灯片中的公式文字。限制行宽后，文字应该自然换行，同时数学公式仍然保持清晰。
+\end{document}
+'''
+        block = r'''%<IguanaTexBridge:line-width>
+\setlength{\textwidth}{0.6\textwidth}
+\setlength{\columnwidth}{\textwidth}
+\setlength{\linewidth}{\textwidth}
+\setlength{\hsize}{\textwidth}
+%</IguanaTexBridge:line-width>
+'''
+        narrow_source = source.replace('\\begin{document}\n', '\\begin{document}\n' + block, 1)
+        bridge = WpsBridge()
+        full = bridge.render({'source': source, 'engine': 'xelatex', 'point_size': 18, 'output': 'png'})
+        narrow = bridge.render({'source': narrow_source, 'engine': 'xelatex', 'point_size': 18, 'output': 'svg'})
+        self.assertLess(narrow['width'], full['width'] * 0.7)
+        self.assertGreater(narrow['height'], full['height'])
+        self.assertEqual(narrow['source'], narrow_source)
+        self.assertEqual(narrow['tags']['LATEXADDIN'], narrow_source)
+        self.assertEqual(narrow['tags']['IGUANATEXSIZE'], '18.0')
+        self.assertEqual(bridge.metadata({'tags': narrow['tags']})['source'], narrow_source)
+        self.assertIn('中', ''.join(xml(narrow['svg'].encode()).xpath('//@data-text')))
+
     def test_custom_packages_and_commands_are_compiled_and_stored_verbatim(self):
         source = ('% Custom document\r\n\\documentclass[10pt]{article}\r\n'
                   '\\usepackage{amsmath,xcolor}\r\n'
