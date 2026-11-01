@@ -2,7 +2,7 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
   <Id>462f0768-b34e-45b1-9e1b-f6e2474c71b9</Id>
-  <Version>1.0.0.5</Version>
+  <Version>1.0.0.6</Version>
   <ProviderName>IguanaTex Bridge</ProviderName>
   <DefaultLocale>zh-CN</DefaultLocale>
   <DisplayName DefaultValue="IguanaTex Bridge"/>
@@ -11,14 +11,14 @@
   <SupportUrl DefaultValue="https://github.com/Swk6666/Iguanatex_bridge"/>
   <AppDomains><AppDomain>https://localhost:17864</AppDomain></AppDomains>
   <Hosts><Host Name="Presentation"/></Hosts>
-  <Requirements><Sets DefaultMinVersion="1.1"><Set Name="PowerPointApi" MinVersion="1.1"/></Sets></Requirements>
-  <DefaultSettings><SourceLocation DefaultValue="https://localhost:17864/office/taskpane.html"/></DefaultSettings>
+  <Requirements><Sets DefaultMinVersion="1.1"><Set Name="PowerPointApi" MinVersion="1.1"/><Set Name="SharedRuntime" MinVersion="1.1"/></Sets></Requirements>
+  <DefaultSettings><SourceLocation DefaultValue="https://localhost:17864/office/taskpane.html?runtime=1"/></DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
    xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
    xsi:type="VersionOverridesV1_0">
     <Requirements><bt:Sets DefaultMinVersion="1.1"><bt:Set Name="AddinCommands" MinVersion="1.1"/></bt:Sets></Requirements>
-    <Hosts><Host xsi:type="Presentation"><DesktopFormFactor><ExtensionPoint xsi:type="PrimaryCommandSurface">
+    <Hosts><Host xsi:type="Presentation"><Runtimes><Runtime resid="Runtime.Url" lifetime="long"/></Runtimes><DesktopFormFactor><FunctionFile resid="Runtime.Url"/><ExtensionPoint xsi:type="PrimaryCommandSurface">
       <CustomTab id="IgBridge.Tab">
         <Group id="IgBridge.Formulas">
           <Label resid="Formulas.Group"/>
@@ -35,7 +35,7 @@
               <bt:Image size="32" resid="New.Icon32"/>
               <bt:Image size="80" resid="New.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Editor</TaskpaneId><SourceLocation resid="New.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeNew</FunctionName></Action>
           </Control>
           <Control xsi:type="Button" id="IgBridge.Picture">
             <Label resid="Picture.Label"/>
@@ -45,7 +45,7 @@
               <bt:Image size="32" resid="Picture.Icon32"/>
               <bt:Image size="80" resid="Picture.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Batch</TaskpaneId><SourceLocation resid="Picture.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgePicture</FunctionName></Action>
           </Control>
           <Control xsi:type="Button" id="IgBridge.Edit">
             <Label resid="Edit.Label"/>
@@ -55,7 +55,7 @@
               <bt:Image size="32" resid="Edit.Icon32"/>
               <bt:Image size="80" resid="Edit.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Editor</TaskpaneId><SourceLocation resid="Edit.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeEdit</FunctionName></Action>
           </Control>
         </Group>
         <Group id="IgBridge.Automation">
@@ -73,7 +73,7 @@
               <bt:Image size="32" resid="Status.Icon32"/>
               <bt:Image size="80" resid="Status.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Status.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeStatus</FunctionName></Action>
           </Control>
           <Control xsi:type="Button" id="IgBridge.Cancel">
             <Label resid="Cancel.Label"/>
@@ -83,7 +83,7 @@
               <bt:Image size="32" resid="Cancel.Icon32"/>
               <bt:Image size="80" resid="Cancel.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Cancel.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeCancel</FunctionName></Action>
           </Control>
           <Control xsi:type="Button" id="IgBridge.Settings">
             <Label resid="Settings.Label"/>
@@ -93,7 +93,7 @@
               <bt:Image size="32" resid="Settings.Icon32"/>
               <bt:Image size="80" resid="Settings.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Settings.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeSettings</FunctionName></Action>
           </Control>
           <Control xsi:type="Button" id="IgBridge.Draft">
             <Label resid="Draft.Label"/>
@@ -103,7 +103,7 @@
               <bt:Image size="32" resid="Draft.Icon32"/>
               <bt:Image size="80" resid="Draft.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Editor</TaskpaneId><SourceLocation resid="Draft.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeDraft</FunctionName></Action>
           </Control>
         </Group>
         <Group id="IgBridge.Compatibility">
@@ -121,7 +121,7 @@
               <bt:Image size="32" resid="Protect.Icon32"/>
               <bt:Image size="80" resid="Protect.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Protect.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeProtect</FunctionName></Action>
           </Control>
           <Control xsi:type="Button" id="IgBridge.Help">
             <Label resid="Help.Label"/>
@@ -131,7 +131,7 @@
               <bt:Image size="32" resid="Help.Icon32"/>
               <bt:Image size="80" resid="Help.Icon80"/>
             </Icon>
-            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Help.Url"/></Action>
+            <Action xsi:type="ExecuteFunction"><FunctionName>igBridgeHelp</FunctionName></Action>
           </Control>
         </Group>
         <Label resid="Tab.Label"/>
@@ -168,6 +168,7 @@
         <bt:Image id="Help.Icon80" DefaultValue="https://localhost:17864/office/icons/help-80.png"/>
       </bt:Images>
       <bt:Urls>
+        <bt:Url id="Runtime.Url" DefaultValue="https://localhost:17864/office/taskpane.html?runtime=1"/>
         <bt:Url id="New.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=new"/>
         <bt:Url id="Picture.Url" DefaultValue="https://localhost:17864/office/batch.html"/>
         <bt:Url id="Edit.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=edit"/>

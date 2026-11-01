@@ -78,7 +78,10 @@
     Office.onReady(function (info) {
         if (info.host !== Office.HostType.PowerPoint) { status('请在 PowerPoint 中打开此加载项。', true); return; }
         run(null, async function () {
-            if (mode === 'settings') {
+            var snapshot = window.IguanaDialogClient ? await window.IguanaDialogClient.ready : null;
+            if (mode === 'message') {
+                status(snapshot && snapshot.message || '无法完成操作。', true);
+            } else if (mode === 'settings') {
                 $('settings').hidden = false; settings = await api('wps/settings');
                 $('size').value = settings.point_size; $('color').value = settings.color; $('align').value = settings.align; $('reviewSetting').checked = settings.review;
             } else if (mode === 'status' || mode === 'cancel') {
@@ -87,7 +90,7 @@
                 $('protect').hidden = false; status('准备检查当前演示文稿。');
             } else {
                 $('help').hidden = false;
-                var supported = Office.context.requirements.isSetSupported('PowerPointApi', '1.10');
+                var supported = snapshot ? snapshot.supportsPictures : Office.context.requirements.isSetSupported('PowerPointApi', '1.10');
                 $('capabilities').textContent = supported ? '当前版本支持直接读取选中图片和同步替代文字。' : '当前版本不支持直接读取选中图片；可在 AI 助手中粘贴截图。';
                 $('diagnostics').textContent = JSON.stringify(await api('doctor'), null, 2);
             }

@@ -4,7 +4,7 @@
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head>
 <body><header class="app-header"><div class="mark" aria-hidden="true">∑</div><h1>IguanaTex <span>Bridge</span></h1></header>
 <main class="utility"><section><h2>图片转公式</h2><p id="selection">正在读取选中的图片…</p>
-<p class="note">将图片逐张发送到 OpenAI 识别，可能产生 API 费用。转换期间可切换幻灯片；请保持此加载项窗格和演示文稿打开。</p>
+<p class="note">将图片逐张发送到 OpenAI 识别，可能产生 API 费用。转换期间可切换幻灯片；请保持此窗口和演示文稿打开。</p>
 <button id="start" class="primary" disabled>开始转换</button><button id="cancel" disabled>取消转换</button>
 <p id="progressText" role="status" aria-live="polite">尚未开始转换。</p><pre id="errors"></pre>
 <div id="review" hidden><h3>请校对本张图片</h3><p class="note">核对后选择替换、跳过或取消。</p>
@@ -12,4 +12,4 @@
 <label>识别结果</label><img id="reviewPreview" class="review-image" alt="公式预览">
 <div><button id="accept" class="primary">替换原图</button><button id="skip">跳过本张</button><button id="stopReview">取消转换</button></div></div>
 <p id="message" class="note"></p></section></main>
-<script src="adapter.js"></script><script src="batch.js"></script></body></html>
+<script src="adapter.js"></script><script src="dialog-bridge.js"></script><script src="batch.js"></script></body></html>

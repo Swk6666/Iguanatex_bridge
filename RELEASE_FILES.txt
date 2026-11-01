@@ -107,6 +107,8 @@ paths.py
 requirements-ocr.txt
 requirements-office.txt
 setup_office.py
+office_native.py
+test_office_native.py
 shared/ocr.css
 shared/ocr.js
 shared/latex.js

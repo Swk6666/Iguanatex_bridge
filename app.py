@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 from bridge import Deck, render, public_records, doctor
 from wps_support import WpsBridge, WpsWorkflow, OfficeBatch
+from office_native import NativePowerPoint
 from ocr import OcrJobs
 from ai_chat import ChatJobs
 from paths import VERSION
@@ -30,7 +31,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       token=secrets.token_urlsafe(32), renderer=WpsBridge(cache_dir),
                       ocr=OcrJobs(**(ocr_options or {})), chat=ChatJobs(**(chat_options or {})),
                       workflow=WpsWorkflow(Path(cache_dir) / 'state' if cache_dir else None),
-                      office_batch=OfficeBatch())
+                      office_batch=OfficeBatch(), office_native=NativePowerPoint())
     state, lock, token = shared['state'], shared['lock'], shared['token']
     wps_bridge, ocr = shared['renderer'], shared['ocr']
     chat = shared['chat']
@@ -162,6 +163,13 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 return {'source': complete_source(source) if base is None else replace_formula(base, source)}
             elif op == '/api/wps/settings':
                 return workflow.settings(req)
+            elif op == '/api/office/native/capture':
+                return shared['office_native'].capture(req)
+            elif op == '/api/office/native/apply':
+                # Only a server-cached preview is accepted, never a client path,
+                # arbitrary image, macro, or source to run through PowerPoint.
+                rendered = wps_bridge.render_result({'id': req.get('renderId')})
+                return shared['office_native'].apply(req, rendered)
             elif op == '/api/office/batch/start':
                 previous = office_batch.status()
                 if previous['status'] == 'interrupted' and previous.get('active_job'):
@@ -284,6 +292,7 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
         def server_close(self):
             super().server_close()
             if owner:
+                shared['office_native'].close()
                 ocr.close()
                 chat.close()
 

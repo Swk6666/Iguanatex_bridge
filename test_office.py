@@ -46,6 +46,25 @@ class OfficeServiceTests(unittest.TestCase):
         self.assertEqual((final['status'], final['succeeded'], final['total']), ('cancelled', 1, 3))
         self.assertEqual(self.request('/api/office/batch/status', {}), final)
 
+    def test_native_routes_require_session_origin_and_cached_render(self):
+        native = self.shared['office_native']
+        with patch.object(native, 'capture', return_value={'nativeSession': 'opaque'}) as capture:
+            for headers in ({'X-Bridge-Token': ''}, {'Origin': 'https://evil.invalid'}, {'Host': 'evil.invalid'}):
+                with self.assertRaises(urllib.error.HTTPError) as cm:
+                    self.request('/api/office/native/capture', {}, headers=headers)
+                self.assertEqual(cm.exception.code, 403); cm.exception.close()
+            capture.assert_not_called()
+            self.assertEqual(self.request('/api/office/native/capture', {'binding': {'slideId': '712'}}), {'nativeSession': 'opaque'})
+            capture.assert_called_once_with({'binding': {'slideId': '712'}})
+        with patch.object(native, 'apply', return_value={'ok': True}) as apply:
+            with self.assertRaises(urllib.error.HTTPError) as cm:
+                self.request('/api/office/native/apply', {'renderId': '../untrusted.svg', 'path': 'C:/untrusted.svg'})
+            self.assertEqual(cm.exception.code, 400); cm.exception.close(); apply.assert_not_called()
+            with patch.object(self.shared['renderer'], 'render_result', return_value={'path': 'server-cached.svg'}) as cached:
+                self.assertEqual(self.request('/api/office/native/apply', {'renderId': 'valid-id', 'path': 'untrusted.svg'}), {'ok': True})
+                cached.assert_called_once_with({'id': 'valid-id'})
+                self.assertEqual(apply.call_args.args[1], {'path': 'server-cached.svg'})
+
     def test_assets_and_render_supply_office_image_data(self):
         for path in ('/office/taskpane.html', '/office/adapter.js', '/office/taskpane.js', '/office/batch.html', '/office/batch.js', '/office/utility.html', '/office/utility.js',
                      '/office/utility.css', '/office/icons/recognize-32.png', '/office/icon.png', '/shared/ocr.js', '/shared/ocr.css'):
@@ -121,6 +140,15 @@ class OfficeServiceTests(unittest.TestCase):
         self.assertEqual(controls, [['IgBridge.New','IgBridge.Picture','IgBridge.Edit'],
             ['IgBridge.Status','IgBridge.Cancel','IgBridge.Settings','IgBridge.Draft'],
             ['IgBridge.Protect','IgBridge.Help']])
+        actions = root.findall('.//o:CustomTab/o:Group/o:Control/o:Action', ns)
+        action_type = '{http://www.w3.org/2001/XMLSchema-instance}type'
+        self.assertEqual([action.get(action_type) for action in actions], ['ExecuteFunction'] * 9)
+        self.assertEqual([action.find('o:FunctionName', ns).text for action in actions],
+            ['igBridgeNew','igBridgePicture','igBridgeEdit','igBridgeStatus','igBridgeCancel',
+             'igBridgeSettings','igBridgeDraft','igBridgeProtect','igBridgeHelp'])
+        runtime = root.find('.//o:Host/o:Runtimes/o:Runtime', ns)
+        function_file = root.find('.//o:Host/o:DesktopFormFactor/o:FunctionFile', ns)
+        self.assertEqual((runtime.get('lifetime'), runtime.get('resid')), ('long', function_file.get('resid')))
         resources = {item.get('id'):item.get('DefaultValue') for item in root.findall('.//bt:Images/bt:Image', ns)}
         for group in groups:
             for control in group.findall('o:Control', ns):

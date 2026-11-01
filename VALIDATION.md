@@ -1,5 +1,16 @@
 # 验证记录 · 0.6.1
 
+## 未发布 · Windows PowerPoint LTSC Shape 兼容编辑 · 2026-11-02
+
+- 在 Windows Office Professional Plus 2024 LTSC（16.0.17932.21056，64 位）和私有演示文稿的临时副本中实测。正式文稿未打开、未修改；未修改证书、宏或 Office 安全设置。
+- 从已安装的 Bridge 功能区点击“编辑选中公式”，直接读取原 IguanaTeX Shape 组合，在独立窗口显示完整源码、XeLaTeX 和 16 pt，无右侧任务窗格。另实测选择组合内部字形，通过 `ChildShapeRange` 找到整条公式。
+- 完整“修改源码 → 本机预览 → 对话框向父运行时请求更新 → HTTP/COM 写入”成功：公式增加一项后写为真正的 SVG（原生类型 28，PPTX 中为含 SVG 的 Picture），源码、字号与备份标签完整。由于自动化工具不能定位 WebView 子控件，输入和按钮处理器由只匹配临时副本随机测试标签的测试脚本触发；测试脚本随后移除，没有加入分发代码。
+- 保存副本并独立解析 PPTX：本页仍为 5 个公式，其他 4 个源码哈希不变；目标左上角坐标与高度的 EMU 值完全一致，宽度按内容改变，层叠顺序保持。同一原生会话连续更新两次成功。
+- 保存后重新从 Bridge 功能区打开生成的 SVG，读回修改后的完整源码；原版 IguanaTeX 的 Edit LaTeX display 也能读取同一源码、XeLaTeX 和 16 pt。
+- 修复实机发现的标识差异：Office.js 的幻灯片 ID 为 `SlideID#标识`，COM 使用数值 SlideID。会话保存完整 Office.js ID，并以文件完整路径及存活的文稿、窗口、幻灯片、形状 COM 引用进行双重绑定。
+- 14 项原生适配器测试及 10 项 Office 服务/批处理测试通过；31 项 Office.js 适配器、16 项编辑器交互测试，以及对话框和辅助窗口测试通过。覆盖错误文稿/页面/选择、外层混合组合、多公式冲突、内部字形变化、源码截断、过期会话、写入中并发修改、删除响应丢失，以及本地令牌/来源检查和服务端预览缓存。
+- Windows 专用 `pywin32` 依赖、原生服务及网页适配器已同步到独立安装目录，后台已重启。测试副本和包含原文的图片不进入分发包。
+
 ## 未发布 · WPS 行宽比例 · 2026-10-31
 
 - 用中文段落、行内数学和独立公式实测本机 XeLaTeX：A4 正文宽度设为 `0.6` 后自然换行，字号不变；PNG / SVG 均可导出，SVG 的 IguanaTex `LATEXADDIN` 标签可回读完整源码。pdfLaTeX 和 LuaLaTeX 的英文段落也分别实测自动换行。
@@ -186,7 +197,7 @@
 
 ## 尚未验证
 
-- Windows / macOS 上的 PowerPoint + IguanaTex 识别、ReGenerate、尺寸和再次保存。
+- macOS PowerPoint 与 IguanaTex 的往返，以及其他 Windows Office 版本；Windows 原版 IguanaTex 的 ReGenerate 后再保存（本次验证了读取 Bridge 写回的源码和字号）。
 - Windows / macOS WPS 安装和自启动脚本的实际执行。
 - 其他 Linux WPS 版本和自定义企业加载项政策。
 - 实时更新不保留动画、手动字形配色、图片特效、交互动作或原生逐字 Shape 结构；编辑界面及说明已明确告知。含其他对象的外层排版组合不自动拆分重组。

@@ -3,6 +3,7 @@
     var $ = function (id) { return document.getElementById(id); };
     var target = null, insertTarget = null, imageId = null, pictureSettings = null, pictureSourceReady = false, draftError = '', token = null, preview = null, previewKey = '', busy = false, appliedSize = 18, ready = false, widthDirty = false;
     var mode = new URLSearchParams(location.search).get('mode') || 'new';
+    var isRuntime = new URLSearchParams(location.search).get('runtime') === '1';
     var sizePreferenceKey = 'iguanatex-bridge.pointSize';
     var templates = {sum: '\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}',
         matrix: '\\mathbf{A}=\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}',
@@ -280,24 +281,86 @@
             setCompileError({source: $('source').value, engine: $('engine').value, message: draftError}); }
         status(state.status || '编辑完整 LaTeX 文档，预览后写入幻灯片。');
     }
+    function hostOperations() {
+        return {
+            capture: function (edit) { return IguanaOffice.capture(Boolean(edit)); },
+            apply: async function (captured, renderId, sizeMode) {
+                return IguanaOffice.apply(captured, await api('render/result', {id: renderId}), sizeMode);
+            },
+            capturePictures: function () { return IguanaOffice.capturePictures(); },
+            readPicture: async function (captured) {
+                var image = await IguanaOffice.readPicture(captured);
+                return api('wps/review-create', {image: image, preview: image});
+            },
+            applyBatch: async function (captured, renderId) {
+                return IguanaOffice.applyBatch(captured, await api('render/result', {id: renderId}));
+            },
+            scanFormulas: function () { return IguanaOffice.scanFormulas(); },
+            syncFormula: function (item, metadata) { return IguanaOffice.syncFormula(item, metadata); }
+        };
+    }
     async function openEditor() {
         if (!window.IguanaDialogHost) return;
         var state = editorState();
         // Keep the original slide as the insertion target even if the user
         // changes the presentation while the separate editor is open.
         if (!state.target) state.insertTarget = await IguanaOffice.capture(false);
-        await window.IguanaDialogHost.open(state, {
-            capture: function (edit) { return IguanaOffice.capture(edit); },
-            apply: async function (captured, renderId, sizeMode) {
-                var result = await api('render/result', {id: renderId});
-                return IguanaOffice.apply(captured, result, sizeMode);
-            },
-            closed: restoreState
-        });
+        var operations = hostOperations(); operations.closed = restoreState;
+        await window.IguanaDialogHost.open(state, operations);
     }
     $('openEditor').onclick = function () { return run(openEditor); };
     $('closeEditor').onclick = function () { if (window.IguanaDialogClient) window.IguanaDialogClient.close(editorState()); };
     if (!window.Office) { status('Office.js 加载失败，请检查网络或从 PowerPoint 加载项打开。', true); return; }
+    if (isRuntime && !window.IguanaDialogClient) {
+        var runtimeReady = new Promise(function (resolve) { Office.onReady(resolve); });
+        var commandBusy = false;
+        async function cancelActive() {
+            var current = await api('office/batch/cancel');
+            if (current.status === 'running') return '已请求停止转换。';
+            var conversation = null;
+            try { conversation = window.localStorage.getItem('iguanatex-bridge.openaiConversation'); } catch (ignored) {}
+            var history = await api('chat/history', {conversation_id: conversation});
+            if (history.active_job) { await api('chat/cancel', {id: history.active_job}); return '已请求停止当前 AI 请求。'; }
+            return '当前没有正在进行的转换。';
+        }
+        async function command(name, event) {
+            var acquired = false;
+            try {
+                var info = await runtimeReady;
+                if (info.host !== Office.HostType.PowerPoint || !Office.context.requirements.isSetSupported('PowerPointApi', '1.5')) {
+                    throw new Error('此 PowerPoint 版本不支持所需 API。');
+                }
+                if (window.IguanaDialogHost.isOpen()) {
+                    if (name === 'cancel') window.IguanaDialogHost.notify(await cancelActive());
+                    else window.IguanaDialogHost.notify('请先关闭当前窗口，再打开其他功能。');
+                    return;
+                }
+                if (commandBusy) return;
+                commandBusy = true; acquired = true;
+                if (name === 'new') { await newFormula(); await openEditor(); }
+                else if (name === 'edit') { await loadSelection(); await openEditor(); }
+                else if (name === 'draft') { await preparePicture(true); await openEditor(); }
+                else {
+                    var page = name === 'picture' ? 'batch' : 'utility';
+                    await window.IguanaDialogHost.open({page: page, mode: name,
+                        supportsPictures: Office.context.requirements.isSetSupported('PowerPointApi', '1.10')}, hostOperations());
+                }
+            } catch (error) {
+                var message = error.message || String(error);
+                if (window.IguanaDialogHost.isOpen()) window.IguanaDialogHost.notify(message);
+                else try { await window.IguanaDialogHost.open({page: 'utility', mode: 'message', message: message}, hostOperations()); }
+                catch (ignored) { console.error(message); }
+            } finally {
+                if (acquired) commandBusy = false;
+                event.completed();
+            }
+        }
+        [['igBridgeNew', 'new'], ['igBridgePicture', 'picture'], ['igBridgeEdit', 'edit'],
+            ['igBridgeStatus', 'status'], ['igBridgeCancel', 'cancel'], ['igBridgeSettings', 'settings'],
+            ['igBridgeDraft', 'draft'], ['igBridgeProtect', 'protect'], ['igBridgeHelp', 'help']].forEach(function (item) {
+            Office.actions.associate(item[0], function (event) { return command(item[1], event); });
+        });
+    }
     Office.onReady(function (info) {
         if (info.host !== Office.HostType.PowerPoint) { status('请在 PowerPoint 中打开此加载项。', true); return; }
         // The dialog webview does not expose the presentation requirement set
@@ -306,6 +369,12 @@
             status('此 PowerPoint 版本不支持所需 API。请更新 Office，或打开独立 PPTX 编辑器。', true); return;
         }
         ready = true;
+        if (isRuntime && !window.IguanaDialogClient) {
+            // Office can show the default page when the add-in is first added.
+            // The shared runtime stays alive after that initial pane is hidden.
+            if (Office.addin && Office.addin.hide) Office.addin.hide().catch(function () {});
+            return;
+        }
         if (window.IguanaDialogClient) {
             run(async function () {
                 restoreState(await window.IguanaDialogClient.ready);

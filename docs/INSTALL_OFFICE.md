@@ -72,7 +72,13 @@ start_office_windows.bat
 
 写入包含 IguanaTex 原生 Tags 和压缩备份标签，图像数据也保留源码。支持 PowerPointApi 1.10 的版本同时写入替代文字备份；较低版本使用额外的 `IGUANABRIDGEMETA` 标签。PPTX 内的公式可通过 LaTeX 再编辑，不是 Office 原生数学对象。
 
-**兼容边界：** 更新支持位置、保留宽高、保留高度、按字号缩放；PowerPointApi 1.8 额外保留层叠顺序，并可读取单条 IguanaTeX Shape 组合及选中的内部字形，将整条公式更新为带源码的 SVG / PNG。后台批量转换的 SVG 使用带图片填充的形状，以便在其他页面工作时写入原页面，含原生标签及源码备份，可在 Bridge 中再编辑。输出不保留原生逐字 Shape 结构；混合排版或多公式组合会拒绝整体替换，低版本 Office 可先用原 IguanaTeX 转 Picture。旋转、翻转、动画、特效和动作不保留，需要重新设置。读取和写入均检查对象及页面是否变化；新图片源码验证通过后才删除原公式。发生通信中断时可能留下新旧两个对象，请先检查幻灯片再重试。
+**兼容边界：** 更新支持位置、保留宽高、保留高度、按字号缩放。PowerPointApi 1.8 或下面的 Windows 原生兼容接口可读取单条 IguanaTeX Shape 组合及选中的内部字形，将整条公式更新为带源码的 SVG / PNG，并保留层叠顺序。后台批量转换的 SVG 使用带图片填充的形状，以便在其他页面工作时写入原页面，含原生标签及源码备份，可在 Bridge 中再编辑。输出不保留原生逐字 Shape 结构；混合排版或多公式组合会拒绝整体替换。旋转、翻转、动画、特效和动作不保留，需要重新设置。读取和写入均检查对象及页面是否变化；新图片源码验证通过后才删除原公式。发生通信中断时可能留下新旧两个对象，请先检查幻灯片再重试。
+
+**Windows Office 2024 LTSC 的 Shape 兼容编辑：** 该版本不提供 PowerPointApi 1.8，Bridge 会自动使用 Windows 原生 PowerPoint 对象模型（COM）读取和更新选中的公式。直接点击 **IguanaTex Bridge → 编辑选中公式** 即可，无需先执行 Convert to Picture。安装 `requirements-office.txt` 会自动安装 Windows 专用的 `pywin32`；已有安装更新后需重启 Bridge 本地服务。不会启用 VBA 宏、修改安全设置、另开 PowerPoint 实例或自动保存文稿。
+
+此兼容接口要求文稿已保存到本地（当前未保存的编辑仍可读取），并且编辑期间保留原文稿窗口和原幻灯片。组合内的任意字形或图像发生变化时拒绝覆盖；关闭并重新打开文稿、另存为、重启服务或编辑会话超过 30 分钟后，需要重新读取公式。写回默认使用矢量 SVG，原生 IguanaTeX 标签与源码备份一并保留；公式不再是可逐字编辑的 Shape 组合。全稿“检查与同步源码”和后台图片识别仍受各自 Office.js 版本限制，此兼容接口仅用于单个 Shape 公式编辑。
+
+其他平台的 Shape 组合编辑仍需要 PowerPointApi 1.8，或先用原 IguanaTeX 转为 Picture。Microsoft 365 的 Windows PowerPoint 从版本 2504、内部版本 18730.20030 起支持 1.8，具体以微软的 [PowerPoint API 要求集](https://learn.microsoft.com/en-us/javascript/api/requirement-sets/powerpoint/powerpoint-api-requirement-sets)为准。
 
 ## 端口、浏览器与排错
 

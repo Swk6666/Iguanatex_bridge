@@ -1,5 +1,5 @@
-/* The Office dialog has its own webview. Document operations remain in its
-   parent task pane and are forwarded over Office's same-origin dialog API. */
+/* Each Office dialog has its own webview. The hidden shared runtime owns
+   presentation access and forwards only the requested operations. */
 (function (root) {
     'use strict';
     var isDialog = new URLSearchParams(root.location.search).get('dialog') === '1';
@@ -13,19 +13,33 @@
     }
 
     if (!isDialog) {
-        var active = null;
+        var active = null, opening = false;
+        var pages = {editor: 'taskpane.html', batch: 'batch.html', utility: 'utility.html'};
+        var methods = {capture: ['edit'], apply: ['target', 'renderId', 'sizeMode'],
+            capturePictures: [], readPicture: ['target'], applyBatch: ['target', 'renderId'],
+            scanFormulas: [], syncFormula: ['item', 'metadata']};
         root.IguanaDialogHost = {
+            isOpen: function () { return Boolean(active || opening); },
+            notify: function (message) {
+                if (active) try { active.messageChild(JSON.stringify({type: 'notice', message: message})); } catch (ignored) {}
+            },
             open: function (snapshot, operations) {
                 return new Promise(function (resolve, reject) {
-                    if (active) { reject(new Error('完整编辑器已经打开。')); return; }
+                    if (active || opening) { reject(new Error('请先关闭当前窗口。')); return; }
                     if (!Office.context.ui || !Office.context.ui.displayDialogAsync ||
                         !Office.context.requirements.isSetSupported('DialogApi', '1.2')) {
-                        reject(new Error('此 PowerPoint 不支持完整编辑窗口，请使用侧栏编辑。')); return;
+                        reject(new Error('此 PowerPoint 不支持完整编辑窗口。')); return;
                     }
-                    var url = root.location.origin + '/office/taskpane.html?dialog=1&mode=' + encodeURIComponent(snapshot.mode);
-                    Office.context.ui.displayDialogAsync(url, {height: 85, width: 75}, function (result) {
+                    var page = snapshot.page || 'editor';
+                    if (!Object.prototype.hasOwnProperty.call(pages, page)) { reject(new Error('未知窗口。')); return; }
+                    var url = root.location.origin + '/office/' + pages[page] + '?dialog=1&mode=' + encodeURIComponent(snapshot.mode || '');
+                    var dimensions = page === 'editor' ? {height: 85, width: 75} :
+                        snapshot.mode === 'message' ? {height: 30, width: 45} : {height: 65, width: 60};
+                    opening = true;
+                    Office.context.ui.displayDialogAsync(url, dimensions, function (result) {
+                        opening = false;
                         if (result.status !== Office.AsyncResultStatus.Succeeded) {
-                            reject(new Error((result.error && result.error.message) || '无法打开完整编辑器。')); return;
+                            reject(new Error((result.error && result.error.message) || '无法打开窗口。')); return;
                         }
                         var dialog = result.value;
                         active = dialog;
@@ -40,10 +54,10 @@
                                 dialog.close(); return;
                             }
                             if (message.type !== 'call' || !Number.isInteger(message.id) ||
-                                !['capture', 'apply'].includes(message.operation)) return;
+                                !Object.prototype.hasOwnProperty.call(methods, message.operation) ||
+                                typeof operations[message.operation] !== 'function') return;
                             Promise.resolve().then(function () {
-                                return message.operation === 'capture' ? operations.capture(Boolean(message.edit)) :
-                                    operations.apply(message.target, message.renderId, message.sizeMode);
+                                return operations[message.operation].apply(null, methods[message.operation].map(function (key) { return message[key]; }));
                             }).then(function (value) { send({type: 'reply', id: message.id, ok: true, value: value}); },
                                 function (error) { send({type: 'reply', id: message.id, ok: false, error: error.message || String(error)}); });
                         });
@@ -59,7 +73,8 @@
     }
 
     document.body.classList.add('office-dialog');
-    document.getElementById('closeEditor').hidden = false;
+    var closeButton = document.getElementById('closeEditor');
+    if (closeButton) closeButton.hidden = false;
     var pending = {}, nextId = 0, initialized = false, resolveReady, rejectReady;
     var ready = new Promise(function (resolve, reject) { resolveReady = resolve; rejectReady = reject; });
     function send(message) { Office.context.ui.messageParent(JSON.stringify(message)); }
@@ -69,6 +84,17 @@
             if (!message) return;
             if (message.type === 'ready' && !initialized) {
                 initialized = true; resolveReady(message.snapshot); return;
+            }
+            if (message.type === 'notice') {
+                var notice = document.getElementById('iguanaNotice');
+                if (!notice) {
+                    notice = document.createElement('div'); notice.id = 'iguanaNotice';
+                    notice.setAttribute('role', 'status');
+                    notice.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;background:#243c36;color:white;padding:12px 18px;border-radius:8px;box-shadow:0 3px 14px #0006';
+                    document.body.appendChild(notice);
+                }
+                notice.textContent = message.message; notice.hidden = false;
+                root.setTimeout(function () { notice.hidden = true; }, 5000); return;
             }
             var waiting = message.type === 'reply' && pending[message.id];
             if (!waiting) return;
@@ -100,6 +126,15 @@
             catch (error) { root.clearTimeout(timer); delete pending[id]; reject(error); }
         }); });
     }
+    async function localApi(path, data) {
+        var session = await fetch('/api/session', {cache: 'no-store'});
+        if (!session.ok) throw new Error('本地服务不可用。');
+        var token = (await session.json()).token;
+        var response = await fetch('/api/' + path, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Bridge-Token': token}, body: JSON.stringify(data)});
+        var result = await response.json();
+        if (!response.ok) throw new Error(result.error || '本地服务不可用。');
+        return result;
+    }
     root.IguanaDialogClient = {ready: ready, close: function (state) { send({type: 'close', state: state}); }};
     root.IguanaOffice = {
         capture: function (edit) { return call('capture', {edit: edit}); },
@@ -107,6 +142,18 @@
             if (!data.render_id) return Promise.reject(new Error('预览未保存，请重新预览后重试。'));
             return call('apply', {target: target, renderId: data.render_id, sizeMode: sizeMode});
         },
+        capturePictures: function () { return call('capturePictures', {}); },
+        readPicture: async function (target) {
+            var cached = await call('readPicture', {target: target});
+            try { return (await localApi('wps/review-get', {id: cached.id})).image; }
+            finally { try { await localApi('wps/review-discard', {id: cached.id}); } catch (ignored) {} }
+        },
+        applyBatch: function (target, data) {
+            if (!data.render_id) return Promise.reject(new Error('预览未保存，请重新预览后重试。'));
+            return call('applyBatch', {target: target, renderId: data.render_id});
+        },
+        scanFormulas: function () { return call('scanFormulas', {}); },
+        syncFormula: function (item, metadata) { return call('syncFormula', {item: item, metadata: metadata}); },
         layout: function (target, data, mode) {
             var old = target && target.original, height = old && mode !== 'font' ? old.height : data.height;
             var width = old && mode !== 'font' ? (mode === 'frame' ? old.width : height * data.width / data.height) : data.width;

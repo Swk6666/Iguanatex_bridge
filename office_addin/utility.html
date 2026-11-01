@@ -12,8 +12,8 @@
 <p class="note">启用校对后，每张图会等待确认；未启用时自动替换。</p><button id="save" class="primary">保存设置</button></section>
 <section id="progress" hidden><h2>转换状态</h2><p id="progressText">正在读取…</p><pre id="progressErrors"></pre><button id="refresh">刷新状态</button><button id="cancel">取消转换</button>
 <div id="review" hidden><h3>请校对本张图片</h3><label>原图</label><img id="reviewOriginal" class="review-image" alt="原图片"><label>识别结果</label><img id="reviewPreview" class="review-image" alt="公式预览"><div><button id="accept" class="primary">替换原图</button><button id="skip">跳过本张</button><button id="stopReview">取消转换</button></div></div>
-<p class="note">转换时可切换幻灯片，请保持批量转换窗格和演示文稿打开。已发送的请求可能产生 API 用量。</p></section>
+<p class="note">转换时可切换幻灯片，请保持批量转换窗口和演示文稿打开。已发送的请求可能产生 API 用量。</p></section>
 <section id="protect" hidden><h2>检查与同步源码</h2><p class="lead">检查当前演示文稿中的公式，将原生标签与源码备份同步。完成后请保存 PPTX。</p><button id="sync" class="primary">检查并同步</button><pre id="syncResult"></pre></section>
-<section id="help" hidden><h2>环境与帮助</h2><p>在一页幻灯片中选中一张或多张未组合的图片，点击“图片转公式”并开始转换。可用“转换设置”调整字号、颜色、对齐和逐张校对。</p><p>识别图片会发送到 OpenAI，并按 API 用量计费。转换过程中保持批量转换窗格和演示文稿打开；失败的原图保留，可选择原图后点击“编辑失败草稿”。</p><p id="capabilities"></p><button id="doctor">检查本机 LaTeX</button><pre id="diagnostics"></pre></section>
+<section id="help" hidden><h2>环境与帮助</h2><p>在一页幻灯片中选中一张或多张未组合的图片，点击“图片转公式”并开始转换。可用“转换设置”调整字号、颜色、对齐和逐张校对。</p><p>识别图片会发送到 OpenAI，并按 API 用量计费。转换过程中保持批量转换窗口和演示文稿打开；失败的原图保留，可选择原图后点击“编辑失败草稿”。</p><p id="capabilities"></p><button id="doctor">检查本机 LaTeX</button><pre id="diagnostics"></pre></section>
 <div id="status" role="status" aria-live="polite"></div>
-</main><script src="adapter.js"></script><script src="utility.js"></script></body></html>
+</main><script src="adapter.js"></script><script src="dialog-bridge.js"></script><script src="utility.js"></script></body></html>

@@ -27,6 +27,45 @@
         return JSON.stringify(copy);
     }
     function hasSource(data) { return Boolean(data.tags.LATEXADDIN || data.tags.IGUANABRIDGEMETA || (data.alt || '').includes('IGUANABRIDGE1:')); }
+    function nativeWindows() { return root.Office.context.platform === 'PC'; }
+    async function nativeApi(operation, data) {
+        var session = await root.fetch('/api/session', {cache: 'no-store'});
+        if (!session.ok) throw new Error('本地服务连接失败，请重启 IguanaTex Bridge。');
+        var token = (await session.json()).token;
+        var response = await root.fetch('/api/office/native/' + operation, {method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-Bridge-Token': token}, body: JSON.stringify(data)});
+        var result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Windows Shape 兼容接口不可用。');
+        return result;
+    }
+    async function documentUrl() {
+        var document = root.Office.context.document;
+        if (document.url) return document.url;
+        if (!document.getFilePropertiesAsync) return '';
+        return new Promise(function (resolve, reject) {
+            document.getFilePropertiesAsync(function (result) {
+                if (result.status === root.Office.AsyncResultStatus.Failed) reject(new Error(result.error.message));
+                else resolve(result.value.url || '');
+            });
+        });
+    }
+    async function nativeCapture(presentation, slide, selected) {
+        return nativeApi('capture', {binding: {documentUrl: await documentUrl(),
+            presentationId: presentation.id, slideId: slide.id, selectedId: selected.id}});
+    }
+    async function nativeApply(target, data, mode) {
+        if (!data.render_id) throw new Error('预览未保存，请重新预览后重试。');
+        return root.PowerPoint.run(async function (context) {
+            var p = context.presentation; p.load('id');
+            var slides = p.getSelectedSlides(); slides.load('items/id'); await context.sync();
+            if (p.id !== target.presentationId || slides.items.length !== 1 || slides.items[0].id !== target.slideId) {
+                throw new Error('目标演示文稿或幻灯片已切换，请回到原页后重试。');
+            }
+            return nativeApi('apply', {nativeSession: target.nativeSession, renderId: data.render_id,
+                mode: mode || 'font', align: target.align || null,
+                binding: {documentUrl: await documentUrl(), presentationId: p.id, slideId: slides.items[0].id}});
+        });
+    }
     async function readTrees(context, shapes) {
         var roots = shapes.map(function (shape) { return {shape: shape, children: []}; });
         var level = roots, count = 0, depth = 0;
@@ -39,7 +78,7 @@
             level.forEach(function (node) { node.data = snapshot(node.shape); });
             var groups = level.filter(function (node) { return node.data.type === 'Group'; });
             if (!groups.length) break;
-            if (!supports('1.8')) throw new Error('编辑 Shape 组合需要 PowerPointApi 1.8。请更新 Office，或先用 IguanaTeX 转为 Picture。');
+            if (!supports('1.8')) throw new Error('当前 PowerPoint 不支持 PowerPointApi 1.8。请选中整条公式，在 IguanaTeX 选项卡点击“Convert to Picture”，然后再用 Bridge 编辑。Office 2024 LTSC 无法通过普通更新获得此接口。');
             groups.forEach(function (node) { node.shape.group.shapes.load('items/id'); });
             await context.sync();
             level = [];
@@ -94,9 +133,12 @@
                 slide.shapes.load('items/id,items/type');
                 await context.sync();
                 old = slide.shapes.items.find(function (s) { return s.id === selected.items[0].id; });
+                if (!supports('1.8') && nativeWindows() && (!old || old.type === 'Group')) {
+                    return nativeCapture(presentation, slide, selected.items[0]);
+                }
                 if (old) tree = (await readTrees(context, [old]))[0];
                 else {
-                    if (!supports('1.8')) throw new Error('读取组合内的字符需要 PowerPointApi 1.8，请选中整个公式或更新 Office。');
+                    if (!supports('1.8')) throw new Error('读取组合内的字符需要 PowerPointApi 1.8。请选中整条公式，在 IguanaTeX 选项卡点击“Convert to Picture”，然后再用 Bridge 编辑。Office 2024 LTSC 无法通过普通更新获得此接口。');
                     var groups = slide.shapes.items.filter(function (s) { return s.type === 'Group'; });
                     tree = (await readTrees(context, groups)).find(function (node) { return contains(node, selected.items[0].id); });
                     if (!tree) throw new Error('找不到选中公式，请重新选择。');
@@ -282,6 +324,7 @@
     }
     async function apply(target, data, mode) {
         available();
+        if (target.nativeSession) return nativeApply(target, data, mode);
         var box = layout(target, data, mode), before, addedId = null, deletionStarted = false;
         await root.PowerPoint.run(async function (context) {
             var current = await inspect(context, target);

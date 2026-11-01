@@ -44,7 +44,7 @@ function fixture(version='1.8') {
         if(tags) old.tags.items=Object.entries(tags).map(([key,value])=>({key,value}));
         return old;
     }
-    return {api:sandbox.IguanaOffice,state,old,p,shape,group};
+    return {api:sandbox.IguanaOffice,state,old,p,shape,group,sandbox,office:Office};
 }
 const data={output:'svg',svg:'<svg/>',png:'png',width:100,height:40,alt:'IGUANABRIDGE1:source',tags:{LATEXADDIN:'CaseSensitive x=Y',LATEXENGINEID:'2'}};
 let count=0;
@@ -88,6 +88,54 @@ async function test(fn){await fn();count++;}
     });
     await test(async()=>{
         const f=fixture('1.5');f.old.type='Group';await assert.rejects(f.api.capture(true),/PowerPointApi 1.8/);
+    });
+    await test(async()=>{
+        const f=fixture('1.5'), calls=[];f.office.context.platform='PC';
+        f.office.context.document.url='file:///C:/slides/test.pptx';f.old.type='Group';
+        const nativeTarget={presentationId:'deck',slideId:'s1',original:{id:'old'},nativeSession:'opaque'};
+        f.sandbox.fetch=async(url,options)=>({ok:true,json:async()=>{
+            if(url==='/api/session')return {token:'local-token'};
+            assert.equal(options.headers['X-Bridge-Token'],'local-token');
+            calls.push([url,JSON.parse(options.body)]);return nativeTarget;
+        }});
+        const target=await f.api.capture(true);assert.equal(target.nativeSession,'opaque');
+        assert.equal(calls[0][0],'/api/office/native/capture');
+        assert.equal(calls[0][1].binding.selectedId,'old');
+        const next=await f.api.apply(target,{...data,render_id:'cached-preview'},'height');
+        assert.equal(next.nativeSession,'opaque');
+        assert.equal(calls[1][0],'/api/office/native/apply');
+        assert.equal(calls[1][1].renderId,'cached-preview');
+        assert.equal(calls[1][1].mode,'height');
+        assert.equal(calls[1][1].data,undefined,'do not send arbitrary render data or paths to native writer');
+        assert.equal(f.state.writes.length,0,'native target must never fall through to JS insertion');
+        f.state.selectedSlide='s2';
+        await assert.rejects(f.api.apply(target,{...data,render_id:'cached-preview'}),/切换/);
+        assert.equal(calls.length,2);
+    });
+    await test(async()=>{
+        const f=fixture('1.5');f.office.context.platform='PC';
+        f.office.context.document.getFilePropertiesAsync=cb=>cb({status:'succeeded',value:{url:'C:\\slides\\saved.pptx'}});
+        const glyph=f.shape('glyph');f.state.selected=[glyph];
+        f.sandbox.fetch=async(url,options)=>({ok:true,json:async()=>{
+            if(url==='/api/session')return {token:'local-token'};
+            const binding=JSON.parse(options.body).binding;
+            assert.equal(binding.selectedId,'glyph');assert.equal(binding.documentUrl,'C:\\slides\\saved.pptx');
+            return {nativeSession:'child-session'};
+        }});
+        assert.equal((await f.api.capture(true)).nativeSession,'child-session');
+    });
+    await test(async()=>{
+        const f=fixture('1.5');f.office.context.platform='PC';f.old.type='Group';
+        f.sandbox.fetch=async url=>({ok:url==='/api/session',json:async()=>url==='/api/session'?{token:'local-token'}:{error:'原公式已变化'}});
+        await assert.rejects(f.api.capture(true),/原公式已变化/);
+        await assert.rejects(f.api.apply({nativeSession:'opaque'},data),/重新预览/);
+        assert.equal(f.state.writes.length,0);
+    });
+    await test(async()=>{
+        const f=fixture('1.8');f.office.context.platform='PC';
+        f.sandbox.fetch=()=>{throw Error('modern hosts should use Office.js');};
+        f.group([f.shape('glyph',{EMFCHILD:'True'})]);
+        assert.equal((await f.api.capture(true)).original.type,'Group');
     });
     await test(async()=>{
         const f=fixture('1.4');await assert.rejects(f.api.capture(true),/PowerPointApi 1.5/);
