@@ -4,8 +4,10 @@ import os
 import re
 from pathlib import Path
 import tempfile
+import threading
 import time
 import uuid
+from collections import OrderedDict
 
 from bridge import (Deck, render, decode_meta, encode_meta, human_alt,
                     ID_ENGINES, ENGINE_IDS, MAX_SOURCE, xml, dump)
@@ -15,6 +17,31 @@ class WpsBridge:
     def __init__(self, cache_dir=None):
         self.cache = Path(cache_dir or Path(tempfile.gettempdir()) / ('iguanatex-bridge-' + str(os.getuid() if hasattr(os, 'getuid') else 'user')))
         self.cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+        # Office dialogs and their parent task panes run in separate webviews.
+        # Keep a small, short-lived set of exact preview results so the parent
+        # can insert the very image the user reviewed without sending large
+        # images through Office's dialog-message channel or compiling twice.
+        self._renders = OrderedDict()
+        self._renders_lock = threading.Lock()
+
+    def _prune_renders(self):
+        now = time.monotonic()
+        size = sum(item[2] for item in self._renders.values())
+        while self._renders and (len(self._renders) > 8 or now - next(iter(self._renders.values()))[0] > 1800 or
+                                 (size > 32 * 1024 * 1024 and len(self._renders) > 1)):
+            size -= next(iter(self._renders.values()))[2]
+            self._renders.popitem(last=False)
+
+    def render_result(self, req):
+        render_id = req.get('id', '')
+        if not isinstance(render_id, str) or not re.fullmatch(r'[0-9a-f]{32}', render_id):
+            raise ValueError('预览标识无效，请重新预览。')
+        with self._renders_lock:
+            self._prune_renders()
+            cached = self._renders.get(render_id)
+            if not cached:
+                raise ValueError('预览已过期，请重新预览后插入。')
+            return cached[1]
 
     def image_target(self):
         # Only opaque server-generated names are accepted by image_read.
@@ -89,10 +116,17 @@ class WpsBridge:
         for old in self.cache.iterdir():
             if old.suffix in ('.png', '.svg') and time.time() - old.stat().st_mtime > 7 * 86400:
                 old.unlink(missing_ok=True)
-        return dict(source=rendered.source, engine=rendered.engine, tags=tags, alt=alt,
-                    path=str(path.resolve()), output=output, png=base64.b64encode(png).decode(),
-                    svg=path.read_text(encoding='utf-8') if output == 'svg' else None,
-                    width=rendered.width_pt * size / 10, height=rendered.height_pt * size / 10)
+        render_id = uuid.uuid4().hex
+        result = dict(source=rendered.source, engine=rendered.engine, tags=tags, alt=alt,
+                      path=str(path.resolve()), output=output, png=base64.b64encode(png).decode(),
+                      svg=path.read_text(encoding='utf-8') if output == 'svg' else None,
+                      width=rendered.width_pt * size / 10, height=rendered.height_pt * size / 10,
+                      render_id=render_id)
+        size_bytes = sum(len(result[key]) for key in ('source', 'alt', 'png', 'svg') if isinstance(result[key], str))
+        with self._renders_lock:
+            self._renders[render_id] = (time.monotonic(), result, size_bytes)
+            self._prune_renders()
+        return result
 
     @staticmethod
     def color_source(source, color):
@@ -130,11 +164,91 @@ class WpsBridge:
             return {'found': False}
         if len(source) > MAX_SOURCE:
             raise ValueError('公式源码过长。')
+        # The backup tag contains this same metadata. Including it inside the
+        # next backup recursively nests old copies each time a formula is synced.
+        tags.pop('IGUANABRIDGEMETA', None)
         uid = tags.get('IGUANABRIDGEID') or (backup or {}).get('uid') or str(uuid.uuid4())
         tags['IGUANABRIDGEID'] = uid
         meta = dict(version=1, uid=uid, source=source, engine=engine, tags=tags)
         return dict(found=True, source=source, engine=engine, tags=tags, origin=origin,
                     alt=(human_alt(alt) + '\n' + encode_meta(meta)).strip())
+
+
+class OfficeBatch:
+    """Small cross-pane status record; images and sources never enter it.
+
+    The worker owns Office.js objects in its task pane.  A lease prevents a
+    closed or crashed pane from leaving the status permanently running.
+    Calls are serialized by the HTTP server's shared lock.
+    """
+    LEASE_SECONDS = 150
+
+    def __init__(self):
+        self.record = None
+
+    def status(self):
+        item = self.record
+        if item and item['status'] == 'running' and time.monotonic() - item['heartbeat'] > self.LEASE_SECONDS:
+            item.update(status='interrupted', stage='转换窗口已关闭或失去连接，未处理的原图已保留。', review_id=None)
+        return {k: v for k, v in item.items() if k != 'heartbeat'} if item else {'status': 'idle'}
+
+    def start(self, req):
+        total = req.get('total')
+        if isinstance(total, bool) or not isinstance(total, int) or not 1 <= total <= 100:
+            raise ValueError('一次请选择 1–100 张图片。')
+        if self.status()['status'] == 'running':
+            raise ValueError('已有批量转换正在进行，请先完成或取消。')
+        self.record = dict(id=uuid.uuid4().hex, status='running', total=total, current=0,
+                           succeeded=0, failed=0, skipped=0, errors=[], stage='正在准备',
+                           cancel_requested=False, active_job=None, review_id=None, heartbeat=time.monotonic())
+        return self.status()
+
+    def update(self, req):
+        item = self.record
+        if not item or req.get('id') != item['id'] or self.status()['status'] != 'running':
+            raise ValueError('批量转换已结束或连接中断。')
+        for key in ('current', 'succeeded', 'failed', 'skipped'):
+            if key in req:
+                val = req[key]
+                if isinstance(val, bool) or not isinstance(val, int) or val < item[key] or val > item['total']:
+                    raise ValueError('批量转换进度无效。')
+                item[key] = val
+        if sum(item[k] for k in ('succeeded', 'failed', 'skipped')) > item['total']:
+            raise ValueError('批量转换进度无效。')
+        for key in ('active_job', 'review_id'):
+            if key in req:
+                value = req[key]
+                if value is not None and (not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{32}', value)):
+                    raise ValueError('转换任务标识无效。')
+                item[key] = value
+        if 'stage' in req:
+            if not isinstance(req['stage'], str):
+                raise ValueError('转换状态无效。')
+            item['stage'] = req['stage'][:300]
+        if 'errors' in req:
+            if not isinstance(req['errors'], list) or len(req['errors']) > 100 or not all(isinstance(x, str) for x in req['errors']):
+                raise ValueError('转换错误记录无效。')
+            item['errors'] = [x[:500] for x in req['errors']]
+        item['heartbeat'] = time.monotonic()
+        return self.status()
+
+    def cancel(self):
+        item = self.record
+        if item and self.status()['status'] == 'running':
+            item['cancel_requested'] = True
+            item['stage'] = '正在取消；当前操作结束后停止，尚未替换的原图会保留。'
+        return self.status()
+
+    def finish(self, req):
+        item = self.update(req)
+        record = self.record
+        if req.get('interrupted'):
+            record.update(status='interrupted', stage='转换窗口已关闭，未处理的原图已保留。')
+        else:
+            record.update(status='cancelled' if item['cancel_requested'] else 'completed',
+                          stage='转换已取消。' if item['cancel_requested'] else '转换完成，请保存演示文稿。')
+        record.update(active_job=None, review_id=None)
+        return self.status()
 
 
 class WpsWorkflow:
@@ -189,7 +303,9 @@ class WpsWorkflow:
         if not isinstance(identity, dict) or set(identity) != {'presentation', 'slide_id', 'shape_id'}:
             raise ValueError('图片标识无效。')
         name, slide, shape = identity['presentation'], identity['slide_id'], identity['shape_id']
-        if not isinstance(name, str) or not name or len(name) > 4096 or not isinstance(slide, int) or isinstance(slide, bool) or not isinstance(shape, int) or isinstance(shape, bool):
+        def valid_id(value):
+            return (isinstance(value, int) and not isinstance(value, bool)) or (isinstance(value, str) and 0 < len(value) <= 512)
+        if not isinstance(name, str) or not name or len(name) > 4096 or not valid_id(slide) or not valid_id(shape):
             raise ValueError('图片标识无效。')
         raw = (name + '\0' + str(slide) + '\0' + str(shape)).encode('utf-8')
         return self.directory / ('draft-' + hashlib.sha256(raw).hexdigest() + '.json')

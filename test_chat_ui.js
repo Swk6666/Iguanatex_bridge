@@ -22,7 +22,7 @@ async function fixture(options={}) {
         Event:class{constructor(type){this.type=type;}},URL:{createObjectURL(){return 'blob:local';},revokeObjectURL(){}},
         navigator:{clipboard:{async writeText(text){copied.push(text);}}},
         localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
-        FileReader:class{readAsDataURL(){this.result='data:image/png;base64,abc';this.onload();}},setTimeout(fn){fn();}};
+        atob,File,Uint8Array,FileReader:class{readAsDataURL(){this.result='data:image/png;base64,abc';this.onload();}},setTimeout(fn){fn();}};
     vm.runInNewContext(fs.readFileSync('shared/chat.js','utf8'),sandbox);
     const controller=sandbox.IguanaChat.mount(container,{source,canStart:()=>canStart,prepareSource:options.prepareSource,
         api:async(path,req)=>{
@@ -69,6 +69,13 @@ const button=(f,label)=>f.created.find(e=>e.textContent===label&&typeof e.onclic
         f.prompt('再解释一下');await f.click('send');
         const second=f.calls.filter(c=>c[0]==='chat/start')[1][1];
         assert.equal(second.conversation_id,'conversation');assert.equal(second.revision,1);assert.equal(second.data,null);
+    });
+    await test(async()=>{
+        const f=await fixture();await f.controller.attachPng('aGVsbG8=', '选中的图片.png');
+        assert.equal(f.element('panel img').hidden,false);
+        assert.match(f.element('panel .chat-prompt').value,/识别图片/);
+        assert.equal(f.calls.filter(c=>c[0]==='chat/start').length,0,'attaching must not upload');
+        await f.click('send');assert.equal(f.calls.filter(c=>c[0]==='chat/start').length,1);
     });
     await test(async()=>{
         const f=await fixture({prepareSource:async(source,current)=>{assert.equal(current,'original');return 'complete '+source;}});

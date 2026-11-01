@@ -53,6 +53,10 @@ class WpsIntegrationTests(unittest.TestCase):
         edited = dict(output['tags'], LATEXADDIN=complete_source('X=y % 中文\n'))
         newer = self.request('/api/wps/metadata', {'tags': edited, 'alt': output['alt']})
         self.assertEqual(decode_meta(newer['alt'])['source'], edited['LATEXADDIN'])
+        with_backup = dict(newer['tags'], IGUANABRIDGEMETA=newer['alt'])
+        resynced = self.request('/api/wps/metadata', {'tags': with_backup, 'alt': newer['alt']})
+        self.assertEqual(resynced['alt'], newer['alt'])
+        self.assertNotIn('IGUANABRIDGEMETA', decode_meta(resynced['alt'])['tags'])
 
     def test_reject_cross_origin_and_missing_token(self):
         for headers in [{'Origin': 'https://evil.invalid'}, {'X-Bridge-Token': ''}, {'Host': 'evil.invalid'}]:
@@ -112,6 +116,9 @@ class WpsIntegrationTests(unittest.TestCase):
         self.assertEqual(self.request('/api/wps/draft-get', {'identity': dict(identity, shape_id=8)}), {'found': False})
         self.request('/api/wps/draft-delete', {'identity': identity})
         self.assertFalse(self.request('/api/wps/draft-get', {'identity': identity})['found'])
+        office_identity = {'presentation': 'deck-guid', 'slide_id': 'slide-guid', 'shape_id': 'shape-guid'}
+        self.request('/api/wps/draft-save', {'identity': office_identity, 'signature': 'image-hash', 'source': 'x', 'error': 'error'})
+        self.assertEqual(self.request('/api/wps/draft-get', {'identity': office_identity})['source'], 'x')
         image = base64.b64encode(b'example').decode()
         rid = self.request('/api/wps/review-create', {'image': image, 'preview': image})['id']
         self.assertIsNone(self.request('/api/wps/review-status', {'id':rid})['decision'])

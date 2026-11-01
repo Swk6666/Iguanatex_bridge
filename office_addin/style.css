@@ -31,6 +31,19 @@ body {
   height:14px;
   color:var(--accent)
 }
+.open-editor {
+  align-self:flex-end;
+  margin-top:7px;
+  min-height:30px;
+  font-size:12px
+}
+body.office-dialog .office-navigation,
+body.office-dialog .open-editor {
+  display:none
+}
+body.office-dialog .editor-tools {
+  padding-top:9px
+}
 #formulaImage {
   max-width:none;
   max-height:none;

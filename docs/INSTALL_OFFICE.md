@@ -26,11 +26,13 @@ bash start_office_mac.sh
 
 若 macOS 拒绝脚本写入 PowerPoint 沙盒目录，安装器会显示 Finder 操作路径：在 Finder 按 Cmd+Shift+G，进入上面的 `office` 状态目录，只复制 `IguanaTexBridge.xml`；再前往 `~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/`，创建 `wef` 文件夹并把清单粘贴到里面。不要复制私钥。无需给终端授予“完全磁盘访问”。
 
-保持启动终端运行，在 PowerPoint 中打开测试 PPTX，从“开始 / 插入 → 加载项 → 开发人员加载项”选择 **IguanaTex Bridge**。加载后，顶部出现独立的 **IguanaTex Bridge** 标签，提供 **新建公式 / 编辑选中公式 / 截图识别** 入口。此前单按钮清单已在本机显示于原 IguanaTeX 右侧；其他插件或自定义功能区可能影响排列顺序。首次侧载流程参考[微软 Mac 加载项文档](https://learn.microsoft.com/en-us/office/dev/add-ins/testing/sideload-an-office-add-in-on-mac)。
+保持启动终端运行，在 PowerPoint 中打开测试 PPTX，从“开始 / 插入 → 加载项 → 开发人员加载项”选择 **IguanaTex Bridge**。加载后，顶部出现独立的 **IguanaTex Bridge** 标签，包含 LaTeX 公式、转换管理和跨平台三组入口；其他插件或自定义功能区可能影响排列顺序。首次侧载流程参考[微软 Mac 加载项文档](https://learn.microsoft.com/en-us/office/dev/add-ins/testing/sideload-an-office-add-in-on-mac)。
 
 从旧版升级时，重新运行 `setup_office.py --install-manifest`（或通过 Finder 替换 `wef/IguanaTexBridge.xml`）。保存现有工作后完全退出并重启 PowerPoint，再从“开发人员加载项”选择一次本项目，刷新功能区清单。仅重新打开右侧面板可能仍使用旧清单。
 
 后续使用只需运行 `bash start_office_mac.sh`，然后在 PowerPoint 打开加载项。当前 Office 启动脚本以前台服务运行，尚未注册登录自动启动。已有 Ubuntu WPS 后台启动方式保持不变。
+
+如果本机另行配置了 IguanaTex Bridge 的 macOS 登录启动服务，则本地服务会随用户登录自动启动，无需再运行前台脚本。
 
 ## Windows 首次安装
 
@@ -58,16 +60,19 @@ start_office_windows.bat
 
 ## 使用
 
-1. 新建或打开一页幻灯片，点击顶部 **IguanaTex Bridge → 新建公式**。
+1. 新建或打开一页幻灯片，点击顶部 **IguanaTex Bridge → 新建公式**。支持 Office Dialog API 1.2 时会打开与 WPS 版相似的完整编辑窗口；如果版本不支持，可在右侧面板继续编辑。侧栏中的“打开完整编辑器”可以再次打开窗口。
 2. 输入 TeX，或按照 [OpenAI API 对话](API_CHAT.md)配置密钥，输入文字并附图；收到回答后点击“采用 LaTeX”。
-3. 选择引擎、SVG / PNG、字号，点击“预览”。
+3. 选择引擎、SVG / PNG、字号及行宽，也可通过“插入示例”添加常见公式；点击“预览”或按 Ctrl / ⌘ + Enter。预览区显示写入幻灯片的尺寸。
 4. 核对后点击“插入当前幻灯片”，再保存 PPTX。
 5. 以后选中 IguanaTeX / Bridge 公式，点击功能区或面板中的“编辑选中公式”，核对已读取源码后修改，点击“更新已读取的公式”。更新默认按当前字号重设尺寸；保留高度和固定原宽高可在“更多 → 更新尺寸”中选择。面板中的“新建公式”可清除编辑目标并开始另一条公式。
-6. 截图识别可从功能区“截图识别”进入，也可点击右上角“AI 助手”，再选择、拖入或粘贴图片。
+6. 在同一页中选中一张或多张未组合的图片，点击“图片转公式”，确认数量后点击“开始转换”。图片按顺序识别并编译，转换时可切换幻灯片。请保持演示文稿及批量转换窗格打开；关闭窗格或 PowerPoint 会中断后续处理。也可在“新建公式”中打开 AI 助手，选择、拖入或粘贴截图。
+7. “转换设置”调整图片转换的字号、颜色、对齐方式及替换前逐张校对；“转换状态”和“取消转换”查看或停止批量任务。编译失败时最多自动纠错两次；仍失败则保留原图及源码草稿，可选中原图后使用“编辑失败草稿”。“检查与同步源码”同步当前演示文稿中公式的原生标签及备份。转换后保存 PPTX。
 
-写入包含 IguanaTex 原生 Tags 和压缩备份标签，图像数据也保留源码。Office.js 1.5 无法写替代文字，故采用额外的 `IGUANABRIDGEMETA` 标签；到 WPS 后可“同步源码”，或用独立 PPTX 编辑器建立替代文字备份。PPTX 内的公式可通过 LaTeX 再编辑，不是 Office 原生数学对象。
+直接读取选中图片及后台转换需要 PowerPointApi 1.10；低版本可在 AI 助手中选择或粘贴截图。图片识别会将输入发送到所配置的 OpenAI API，并按 API 用量计费。AI 可能误识公式，建议启用逐张校对或在转换后检查。
 
-**兼容边界：** 更新支持位置、保留宽高、保留高度、按字号缩放；PowerPointApi 1.8 额外保留层叠顺序，并可读取单条 IguanaTeX Shape 组合及选中的内部字形，将整条公式更新为带源码的 SVG / PNG。输出不保留原生逐字 Shape 结构；混合排版或多公式组合会拒绝整体替换，低版本 Office 可先用原 IguanaTeX 转 Picture。旋转、翻转、动画、特效和动作不保留，需要重新设置。读取和写入均检查对象及页面是否变化；新图片源码验证通过后才删除原公式。发生通信中断时可能留下新旧两个对象，请先检查幻灯片再重试。
+写入包含 IguanaTex 原生 Tags 和压缩备份标签，图像数据也保留源码。支持 PowerPointApi 1.10 的版本同时写入替代文字备份；较低版本使用额外的 `IGUANABRIDGEMETA` 标签。PPTX 内的公式可通过 LaTeX 再编辑，不是 Office 原生数学对象。
+
+**兼容边界：** 更新支持位置、保留宽高、保留高度、按字号缩放；PowerPointApi 1.8 额外保留层叠顺序，并可读取单条 IguanaTeX Shape 组合及选中的内部字形，将整条公式更新为带源码的 SVG / PNG。后台批量转换的 SVG 使用带图片填充的形状，以便在其他页面工作时写入原页面，含原生标签及源码备份，可在 Bridge 中再编辑。输出不保留原生逐字 Shape 结构；混合排版或多公式组合会拒绝整体替换，低版本 Office 可先用原 IguanaTeX 转 Picture。旋转、翻转、动画、特效和动作不保留，需要重新设置。读取和写入均检查对象及页面是否变化；新图片源码验证通过后才删除原公式。发生通信中断时可能留下新旧两个对象，请先检查幻灯片再重试。
 
 ## 端口、浏览器与排错
 
@@ -101,4 +106,10 @@ Windows 将生成的新清单重新复制到共享目录。浏览器配置示例
 
 已在 macOS PowerPoint 16.113.3（LTSC Standard for Mac 2024）完成侧载、SVG 插入、改为多行积分矩阵公式、修改字号至 28 pt、更新、保存重开和读取源码；本地解析确认源码标签及备份一致。清单 1.0.0.1 的单按钮功能区已实测可打开编辑面板，DeepSeek 真实自动上传与回填也已通过。上游 IguanaTeX 已能读取本插件的源码、引擎和字号。
 
-清单 1.0.0.2 的三个入口及连续切换、Office Shape 组合更新和上游 ReGenerate 后返回 Bridge 再编辑，目前通过相关自动化检查，尚未完成实机验收。Windows 和本次新增 Ubuntu OCR 也仍需对应设备验证，完整记录见 [VALIDATION.md](../VALIDATION.md)。
+macOS PowerPoint 16.114.2 已实测新版三组九按钮功能区、完整编辑窗口、行宽 0.6 的预览、SVG 插入、重新读取源码及更新公式；并在临时文稿中验证读取所选图片、加载到 AI 助手、手动预览替换、失败草稿恢复，以及公式源码同步。本次未发送图片进行在线识别。
+
+同一版本已用本地模拟 AI 在临时文稿中验证三图批量转换、切换幻灯片后的后台写入、取消并保留未处理图片、逐张校对与跳过、两次自动纠错和失败草稿恢复。保存的 PPTX 包含 SVG 与源码标签；Bridge 和原 IguanaTeX 编辑窗口均能读取测试公式源码。模拟测试没有向 OpenAI 发送图片。
+
+另用真实 OpenAI API 识别了三张合成公式图片：上标、根号分式和定积分均成功转换，切换到另一页后仍能写回原页；检查了保存后的 SVG、源码标签和编辑器读取。公式内容与样例一致，生成结果按照 18 pt 设置重新排版，积分的上下限位置和微分字体与原图有差别。此次尚未在 Ubuntu WPS 上对相同图片进行实机比较。
+
+Windows 和本次新增 Ubuntu OCR 仍需对应设备验证，完整记录见 [VALIDATION.md](../VALIDATION.md)。

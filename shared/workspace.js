@@ -19,7 +19,7 @@
     if (dock && toggle) {
         toggle.onclick = function () { showAssistant(dock.hidden); };
         document.getElementById('assistantClose').onclick = function () { showAssistant(false); };
-        if (new URLSearchParams(location.search).get('mode') === 'ocr') showAssistant(true);
+        if (['ocr', 'picture'].includes(new URLSearchParams(location.search).get('mode'))) showAssistant(true);
     }
     // Line numbers: the source is also set programmatically, so poll cheaply as well as on input.
     var source = document.getElementById('source');

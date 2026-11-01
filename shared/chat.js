@@ -67,8 +67,8 @@
             zone.querySelector('span').hidden = false; action('remove').hidden = true;
             if (blobUrl) URL.revokeObjectURL(blobUrl); blobUrl = null;
         }
-        function select(file) {
-            if (!mayStart() || !file) return;
+        function select(file, fromHost) {
+            if ((!fromHost && !mayStart()) || !file) return;
             if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { status('请选择 PNG、JPEG 或 WebP 图片。'); return; }
             if (file.size > 10 * 1024 * 1024) { status('图片不得超过 10 MB，请先裁剪。'); return; }
             removeImage(); chosen = file; blobUrl = URL.createObjectURL(file); image.src = blobUrl; image.hidden = false;
@@ -260,7 +260,18 @@
             prompt.value = text;
             return send();
         }
-        return {isBusy: function () { return active; }, ready: ready, ask: ask};
+        async function attachPng(base64, name) {
+            await ready;
+            if (active || loading) throw new Error('AI 助手正忙，请稍后重试。');
+            if (typeof base64 !== 'string' || !base64 || base64.length > 14_000_000) throw new Error('图片无效或超过 10 MB。');
+            var raw = root.atob(base64), bytes = new Uint8Array(raw.length);
+            for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+            var file = new File([bytes], name || '选中图片.png', {type:'image/png'});
+            if (file.size > 10 * 1024 * 1024) throw new Error('图片超过 10 MB，请裁剪后重试。');
+            select(file, true);
+            if (!prompt.value.trim()) prompt.value = '请准确识别图片中的数学公式，输出可直接用 XeLaTeX 编译的完整 LaTeX 文档。无法辨认的内容请说明。';
+        }
+        return {isBusy: function () { return active; }, ready: ready, ask: ask, attachPng: attachPng};
     }
     function clip(text, limit) {
         if (text.length <= limit) return text;

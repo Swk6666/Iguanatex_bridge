@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 from bridge import Deck, render, public_records, doctor
-from wps_support import WpsBridge, WpsWorkflow
+from wps_support import WpsBridge, WpsWorkflow, OfficeBatch
 from ocr import OcrJobs
 from ai_chat import ChatJobs
 from paths import VERSION
@@ -29,11 +29,13 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
         shared.update(state={'deck': None, 'name': 'formulas.pptx'}, lock=threading.Lock(),
                       token=secrets.token_urlsafe(32), renderer=WpsBridge(cache_dir),
                       ocr=OcrJobs(**(ocr_options or {})), chat=ChatJobs(**(chat_options or {})),
-                      workflow=WpsWorkflow(Path(cache_dir) / 'state' if cache_dir else None))
+                      workflow=WpsWorkflow(Path(cache_dir) / 'state' if cache_dir else None),
+                      office_batch=OfficeBatch())
     state, lock, token = shared['state'], shared['lock'], shared['token']
     wps_bridge, ocr = shared['renderer'], shared['ocr']
     chat = shared['chat']
     workflow = shared['workflow']
+    office_batch = shared['office_batch']
 
     class Handler(BaseHTTPRequestHandler):
         def reply(self, obj, code=200):
@@ -92,10 +94,18 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                       '/office/taskpane.html': ('office_addin/taskpane.html', 'text/html; charset=utf-8'),
                       '/office/adapter.js': ('office_addin/adapter.js', 'application/javascript'),
                       '/office/taskpane.js': ('office_addin/taskpane.js', 'application/javascript'),
+                      '/office/utility.html': ('office_addin/utility.html', 'text/html; charset=utf-8'),
+                      '/office/utility.js': ('office_addin/utility.js', 'application/javascript'),
+                      '/office/utility.css': ('office_addin/utility.css', 'text/css'),
+                      '/office/batch.html': ('office_addin/batch.html', 'text/html; charset=utf-8'),
+                      '/office/batch.js': ('office_addin/batch.js', 'application/javascript'),
+                      '/office/dialog-bridge.js': ('office_addin/dialog-bridge.js', 'application/javascript'),
                       '/office/style.css': ('office_addin/style.css', 'text/css'),
                       '/office/icon.png': ('office_addin/icon.png', 'image/png')}
             assets.update({f'/wps/images/{name}.svg': (f'wps_addin/images/{name}.svg', 'image/svg+xml')
                            for name in WPS_ICONS})
+            assets.update({f'/office/icons/{name}-{size}.png': (f'office_addin/icons/{name}-{size}.png', 'image/png')
+                           for name in WPS_ICONS for size in (16, 32, 80)})
             if path not in assets:
                 self.reply({'error': 'Not found'}, 404)
                 return
@@ -152,6 +162,46 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 return {'source': complete_source(source) if base is None else replace_formula(base, source)}
             elif op == '/api/wps/settings':
                 return workflow.settings(req)
+            elif op == '/api/office/batch/start':
+                previous = office_batch.status()
+                if previous['status'] == 'interrupted' and previous.get('active_job'):
+                    try:
+                        chat.cancel(previous['active_job'])
+                    except ValueError:
+                        pass
+                return office_batch.start(req)
+            elif op == '/api/office/batch/update':
+                return office_batch.update(req)
+            elif op == '/api/office/batch/status':
+                status = office_batch.status()
+                if status['status'] == 'interrupted' and status.get('active_job'):
+                    try:
+                        chat.cancel(status['active_job'])
+                    except ValueError:
+                        pass
+                    office_batch.record['active_job'] = None
+                    status = office_batch.status()
+                return status
+            elif op == '/api/office/batch/cancel':
+                status = office_batch.cancel()
+                if status.get('active_job'):
+                    try:
+                        chat.cancel(status['active_job'])
+                    except ValueError:
+                        pass
+                return status
+            elif op == '/api/office/batch/finish':
+                return office_batch.finish(req)
+            elif op == '/api/office/batch/abort':
+                if not office_batch.record or req.get('id') != office_batch.record['id']:
+                    raise ValueError('批量转换标识无效。')
+                status = office_batch.cancel()
+                if status.get('active_job'):
+                    try:
+                        chat.cancel(status['active_job'])
+                    except ValueError:
+                        pass
+                return office_batch.finish({'id': req['id'], 'interrupted': True})
             elif op == '/api/wps/draft-save':
                 return workflow.draft_save(req)
             elif op == '/api/wps/draft-get':
@@ -176,6 +226,8 @@ def create_server(port=0, cache_dir=None, tls=None, shared=None, ocr_options=Non
                 return wps_bridge.image_read(req)
             elif op in ('/api/wps/render', '/api/render'):
                 return wps_bridge.render(req)
+            elif op == '/api/render/result':
+                return wps_bridge.render_result(req)
             elif op in ('/api/wps/metadata', '/api/metadata'):
                 return wps_bridge.metadata(req)
             elif op == '/api/ocr/login':

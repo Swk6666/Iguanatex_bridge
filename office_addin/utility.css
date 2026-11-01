@@ -1,0 +1,15 @@
+body{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.utility{flex:1;overflow:auto;padding:18px;color:var(--text)}
+.utility h2{font-size:17px;margin:0 0 12px}
+.utility p{line-height:1.6;margin:0 0 14px}
+.utility .lead,.utility .note{color:var(--text-2)}
+.utility label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.utility input[type=number]{width:85px}.utility input[type=color]{width:48px;height:34px;padding:2px}
+.utility select{min-width:100px}.utility button{margin:0 6px 8px 0}
+.utility pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:var(--text-2)}
+.utility #status{margin-top:16px;font-size:13px;color:var(--text-2)}
+.utility #status.error{color:var(--danger)}
+.utility .review-image{display:block;max-width:100%;max-height:220px;object-fit:contain;background:#fff;border:1px solid #ddd;margin:4px 0 14px}
+.utility h3{font-size:15px;margin:16px 0 8px}
+.utility #progressText{white-space:pre-wrap;overflow-wrap:anywhere}
+.utility input[type=checkbox]{width:auto}

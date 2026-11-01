@@ -6,9 +6,12 @@ const vm = require('node:vm');
 function fixture(version='1.8') {
     let sequence=0;
     const state = {selectedSlide:'s1',selected:[],shapes:[],writes:[],failStamp:false,failCommit:false,missingImageApi:false};
-    const collection = items => ({items,load(){return this;},getItem(id){const item=this.items.find(s=>s.id===id);if(!item)throw Error('Missing item');return item;}});
+    const collection = items => ({items,load(){return this;},getItem(id){const item=this.items.find(s=>s.id===id);if(!item)throw Error('Missing item');return item;},
+        addGeometricShape(type,box){const s=shape(++sequence===1?'new':'new'+sequence,{},'GeometricShape');
+            Object.assign(s,box);s.fill={setImage(value){s.fillImage=value;}};s.lineFormat={visible:true};items.push(s);return s;}});
     function shape(id, tags={}, type='Image') {
-        const s = {id,name:'Equation '+id,type,left:25,top:30,width:50,height:20,load(){return this;},
+        const s = {id,name:'Equation '+id,type,left:25,top:30,width:50,height:20,altTextDescription:'',image:'original png',load(){return this;},
+            getImageAsBase64(){return {value:this.image};},
             delete(){state.shapes.splice(state.shapes.indexOf(s),1);state.writes.push('delete '+id);if(state.failCommit&&id==='old')throw Error('Commit response lost');},
             setZOrder(op){const i=state.shapes.indexOf(s);state.shapes.splice(i,1);state.shapes.splice(op==='SendToBack'?0:i+1,0,s);}};
         Object.defineProperty(s,'zOrderPosition',{get(){return state.shapes.indexOf(s);}});
@@ -21,17 +24,20 @@ function fixture(version='1.8') {
     }
     const old=shape('old',{LATEXADDIN:'A=b',LATEXENGINEID:'2'}), other=shape('other');state.shapes.push(old,other);state.selected=[old];
     const slide={id:'s1',get shapes(){return collection(state.shapes);},setSelectedShapes(ids){state.selected=ids.map(id=>state.shapes.find(s=>s.id===id));}};
-    const p={id:'deck',load(){},slides:{getItem(id){assert.equal(id,'s1');return slide;}},
+    const p={id:'deck',load(){},slides:{items:[slide],load(){},getItem(id){assert.equal(id,'s1');return slide;}},
         getSelectedSlides(){return collection([{...slide,id:state.selectedSlide}]);},getSelectedShapes(){return collection(state.selected);}};
     const Office={AsyncResultStatus:{Failed:'failed'},CoercionType:{Image:'image',XmlSvg:'xmlSvg'},context:{
-        requirements:{isSetSupported(name,v){if(name==='ImageCoercion')return !state.missingImageApi;return Number(v)<=Number(version);}},
+        requirements:{isSetSupported(name,v){if(name==='ImageCoercion')return !state.missingImageApi;
+            const [major,minor]=v.split('.').map(Number),[hostMajor,hostMinor]=version.split('.').map(Number);
+            return major<hostMajor || (major===hostMajor && minor<=hostMinor);}},
         document:{setSelectedDataAsync(data,options,cb){
             assert.equal(state.selected.length,0,'must clear selection before image insertion');
             state.writes.push({data,options});
             const added=shape(++sequence===1?'new':'new'+sequence,{},options.coercionType==='xmlSvg'?'Graphic':'Image');state.shapes.push(added);state.selected=[added];
             cb({status:'succeeded'});
         }}}};
-    const sandbox={Office,PowerPoint:{run:async fn=>fn({presentation:p,sync:async()=>{}})}};
+    const sandbox={Office,crypto:require('node:crypto').webcrypto,TextEncoder,btoa,unescape,encodeURIComponent,
+        PowerPoint:{run:async fn=>fn({presentation:p,sync:async()=>{}})}};
     vm.runInNewContext(fs.readFileSync('office_addin/adapter.js','utf8'),sandbox);
     function group(children, tags) {
         old.type='Group'; old.group={shapes:collection(children)};
@@ -132,6 +138,65 @@ async function test(fn){await fn();count++;}
         const glyph=f.shape('glyph',{LATEXADDIN:'A=b',EMFCHILD:'True'});
         nested.group={shapes:{items:[glyph],load(){}}};f.group([nested],{});f.state.selected=[glyph];
         await assert.rejects(f.api.capture(true),/外层排版组合/);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.state.selected=[f.state.shapes[1]];
+        const picture=await f.api.capturePicture();assert.equal(picture.image,'original png');
+        picture.target.align='center';await f.api.apply(picture.target,data,'font');
+        const inserted=f.state.shapes.find(s=>s.id==='new');assert.equal(inserted.left,0);
+        assert.equal(inserted.altTextDescription,data.alt);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.state.selected=[f.state.shapes[1]];
+        const picture=await f.api.capturePicture();f.state.shapes[1].image='changed png';
+        await assert.rejects(f.api.apply(picture.target,data,'font'),/原图片已变化/);
+        assert.equal(f.state.writes.length,0);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');await assert.rejects(f.api.capturePicture(),/已有公式源码/);
+        await assert.rejects(fixture('1.8').api.capturePicture(),/PowerPointApi 1.10/);
+    });
+    await test(async()=>{
+        const f=fixture('1.10'), scan=await f.api.scanFormulas();
+        assert.equal(scan.items.length,1);assert.equal(scan.hasAlt,true);
+        await f.api.syncFormula(scan.items[0],{tags:{LATEXADDIN:'A=b',LATEXENGINEID:'2'},alt:'backup'});
+        assert.equal(f.old.altTextDescription,'backup');
+        assert.equal(f.old.tags.items.find(t=>t.key==='IGUANABRIDGEMETA').value,'backup');
+    });
+    await test(async()=>{
+        const f=fixture('1.10'), scan=await f.api.scanFormulas();f.old.left=100;
+        await assert.rejects(f.api.syncFormula(scan.items[0],{tags:{LATEXADDIN:'A=b'},alt:'backup'}),/对象已变化/);
+        assert.equal(f.old.altTextDescription,'');
+    });
+    await test(async()=>{
+        const f=fixture('1.10'), glyph=f.shape('glyph',{EMFCHILD:'True'},'Freeform');
+        glyph.altTextDescription='IGUANABRIDGE1:backup';f.group([glyph],{});f.state.selected=[glyph];
+        const captured=await f.api.capture(true);assert.equal(captured.sourceAlt,'IGUANABRIDGE1:backup');
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.old.tags.items=[];f.state.selected=[f.old,f.state.shapes[1]];
+        const items=await f.api.capturePictures();assert.equal(items.length,2);
+        f.state.selectedSlide='s2';const pixels=await f.api.readPicture(items[0].target);assert.equal(pixels,'original png');
+        items[0].target.align='center';await f.api.applyBatch(items[0].target,data);
+        assert.deepEqual(f.state.shapes.map(s=>s.id),['new','other']);
+        assert.equal(f.state.shapes[0].type,'GeometricShape');assert.equal(f.state.shapes[0].fillImage,btoa(data.svg));
+        assert.equal(f.state.shapes[0].altTextDescription,data.alt);assert.equal(f.state.shapes[0].lineFormat.visible,false);
+        await f.api.applyBatch(items[1].target,data);assert.deepEqual(f.state.shapes.map(s=>s.id),['new','new2']);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.old.tags.items=[];f.state.selected=[f.old];const items=await f.api.capturePictures();
+        f.old.image='changed png';await assert.rejects(f.api.applyBatch(items[0].target,data),/原图片已变化/);
+        assert.deepEqual(f.state.shapes.map(s=>s.id),['old','other']);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.old.tags.items=[];f.state.selected=[f.old];const items=await f.api.capturePictures();
+        f.state.failStamp=true;await assert.rejects(f.api.applyBatch(items[0].target,data),/未完整保存/);
+        assert.deepEqual(f.state.shapes.map(s=>s.id),['old','other']);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.old.tags.items=[];f.state.selected=[f.old];const items=await f.api.capturePictures();
+        f.state.failCommit=true;await assert.rejects(f.api.applyBatch(items[0].target,data),/新公式已保留/);
+        assert(f.state.shapes.some(s=>s.id==='new'));
     });
     console.log(count+' Office adapter contract tests passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

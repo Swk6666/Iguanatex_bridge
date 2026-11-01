@@ -2,7 +2,7 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
   <Id>462f0768-b34e-45b1-9e1b-f6e2474c71b9</Id>
-  <Version>1.0.0.3</Version>
+  <Version>1.0.0.5</Version>
   <ProviderName>IguanaTex Bridge</ProviderName>
   <DefaultLocale>zh-CN</DefaultLocale>
   <DisplayName DefaultValue="IguanaTex Bridge"/>
@@ -17,88 +17,192 @@
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
    xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
    xsi:type="VersionOverridesV1_0">
-    <Requirements>
-      <bt:Sets DefaultMinVersion="1.1"><bt:Set Name="AddinCommands" MinVersion="1.1"/></bt:Sets>
-    </Requirements>
-    <Hosts>
-      <Host xsi:type="Presentation">
-        <DesktopFormFactor>
-          <ExtensionPoint xsi:type="PrimaryCommandSurface">
-            <CustomTab id="IgBridge.Tab">
-              <Group id="IgBridge.Formulas">
-                <Label resid="Group.Label"/>
-                <Icon>
-                  <bt:Image size="16" resid="Icon"/>
-                  <bt:Image size="32" resid="Icon"/>
-                  <bt:Image size="80" resid="Icon"/>
-                </Icon>
-                <Control xsi:type="Button" id="IgBridge.NewFormula">
-                  <Label resid="New.Label"/>
-                  <Supertip><Title resid="New.Label"/><Description resid="New.Description"/></Supertip>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon"/>
-                    <bt:Image size="32" resid="Icon"/>
-                    <bt:Image size="80" resid="Icon"/>
-                  </Icon>
-                  <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>IgBridge.Editor</TaskpaneId>
-                    <SourceLocation resid="New.Url"/>
-                  </Action>
-                </Control>
-                <Control xsi:type="Button" id="IgBridge.EditFormula">
-                  <Label resid="Edit.Label"/>
-                  <Supertip><Title resid="Edit.Label"/><Description resid="Edit.Description"/></Supertip>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon"/>
-                    <bt:Image size="32" resid="Icon"/>
-                    <bt:Image size="80" resid="Icon"/>
-                  </Icon>
-                  <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>IgBridge.Editor</TaskpaneId>
-                    <SourceLocation resid="Edit.Url"/>
-                  </Action>
-                </Control>
-                <Control xsi:type="Button" id="IgBridge.OpenEditor">
-                  <Label resid="Editor.Label"/>
-                  <Supertip>
-                    <Title resid="Editor.Label"/>
-                    <Description resid="Editor.Description"/>
-                  </Supertip>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon"/>
-                    <bt:Image size="32" resid="Icon"/>
-                    <bt:Image size="80" resid="Icon"/>
-                  </Icon>
-                  <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>IgBridge.Editor</TaskpaneId>
-                    <SourceLocation resid="Editor.Url"/>
-                  </Action>
-                </Control>
-              </Group>
-              <Label resid="Tab.Label"/>
-            </CustomTab>
-          </ExtensionPoint>
-        </DesktopFormFactor>
-      </Host>
-    </Hosts>
+    <Requirements><bt:Sets DefaultMinVersion="1.1"><bt:Set Name="AddinCommands" MinVersion="1.1"/></bt:Sets></Requirements>
+    <Hosts><Host xsi:type="Presentation"><DesktopFormFactor><ExtensionPoint xsi:type="PrimaryCommandSurface">
+      <CustomTab id="IgBridge.Tab">
+        <Group id="IgBridge.Formulas">
+          <Label resid="Formulas.Group"/>
+          <Icon>
+            <bt:Image size="16" resid="New.Icon16"/>
+            <bt:Image size="32" resid="New.Icon32"/>
+            <bt:Image size="80" resid="New.Icon80"/>
+          </Icon>
+          <Control xsi:type="Button" id="IgBridge.New">
+            <Label resid="New.Label"/>
+            <Supertip><Title resid="New.Label"/><Description resid="New.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="New.Icon16"/>
+              <bt:Image size="32" resid="New.Icon32"/>
+              <bt:Image size="80" resid="New.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Editor</TaskpaneId><SourceLocation resid="New.Url"/></Action>
+          </Control>
+          <Control xsi:type="Button" id="IgBridge.Picture">
+            <Label resid="Picture.Label"/>
+            <Supertip><Title resid="Picture.Label"/><Description resid="Picture.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Picture.Icon16"/>
+              <bt:Image size="32" resid="Picture.Icon32"/>
+              <bt:Image size="80" resid="Picture.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Batch</TaskpaneId><SourceLocation resid="Picture.Url"/></Action>
+          </Control>
+          <Control xsi:type="Button" id="IgBridge.Edit">
+            <Label resid="Edit.Label"/>
+            <Supertip><Title resid="Edit.Label"/><Description resid="Edit.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Edit.Icon16"/>
+              <bt:Image size="32" resid="Edit.Icon32"/>
+              <bt:Image size="80" resid="Edit.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Editor</TaskpaneId><SourceLocation resid="Edit.Url"/></Action>
+          </Control>
+        </Group>
+        <Group id="IgBridge.Automation">
+          <Label resid="Automation.Group"/>
+          <Icon>
+            <bt:Image size="16" resid="Status.Icon16"/>
+            <bt:Image size="32" resid="Status.Icon32"/>
+            <bt:Image size="80" resid="Status.Icon80"/>
+          </Icon>
+          <Control xsi:type="Button" id="IgBridge.Status">
+            <Label resid="Status.Label"/>
+            <Supertip><Title resid="Status.Label"/><Description resid="Status.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Status.Icon16"/>
+              <bt:Image size="32" resid="Status.Icon32"/>
+              <bt:Image size="80" resid="Status.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Status.Url"/></Action>
+          </Control>
+          <Control xsi:type="Button" id="IgBridge.Cancel">
+            <Label resid="Cancel.Label"/>
+            <Supertip><Title resid="Cancel.Label"/><Description resid="Cancel.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Cancel.Icon16"/>
+              <bt:Image size="32" resid="Cancel.Icon32"/>
+              <bt:Image size="80" resid="Cancel.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Cancel.Url"/></Action>
+          </Control>
+          <Control xsi:type="Button" id="IgBridge.Settings">
+            <Label resid="Settings.Label"/>
+            <Supertip><Title resid="Settings.Label"/><Description resid="Settings.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Settings.Icon16"/>
+              <bt:Image size="32" resid="Settings.Icon32"/>
+              <bt:Image size="80" resid="Settings.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Settings.Url"/></Action>
+          </Control>
+          <Control xsi:type="Button" id="IgBridge.Draft">
+            <Label resid="Draft.Label"/>
+            <Supertip><Title resid="Draft.Label"/><Description resid="Draft.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Draft.Icon16"/>
+              <bt:Image size="32" resid="Draft.Icon32"/>
+              <bt:Image size="80" resid="Draft.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Editor</TaskpaneId><SourceLocation resid="Draft.Url"/></Action>
+          </Control>
+        </Group>
+        <Group id="IgBridge.Compatibility">
+          <Label resid="Compatibility.Group"/>
+          <Icon>
+            <bt:Image size="16" resid="Protect.Icon16"/>
+            <bt:Image size="32" resid="Protect.Icon32"/>
+            <bt:Image size="80" resid="Protect.Icon80"/>
+          </Icon>
+          <Control xsi:type="Button" id="IgBridge.Protect">
+            <Label resid="Protect.Label"/>
+            <Supertip><Title resid="Protect.Label"/><Description resid="Protect.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Protect.Icon16"/>
+              <bt:Image size="32" resid="Protect.Icon32"/>
+              <bt:Image size="80" resid="Protect.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Protect.Url"/></Action>
+          </Control>
+          <Control xsi:type="Button" id="IgBridge.Help">
+            <Label resid="Help.Label"/>
+            <Supertip><Title resid="Help.Label"/><Description resid="Help.Description"/></Supertip>
+            <Icon>
+              <bt:Image size="16" resid="Help.Icon16"/>
+              <bt:Image size="32" resid="Help.Icon32"/>
+              <bt:Image size="80" resid="Help.Icon80"/>
+            </Icon>
+            <Action xsi:type="ShowTaskpane"><TaskpaneId>IgBridge.Utility</TaskpaneId><SourceLocation resid="Help.Url"/></Action>
+          </Control>
+        </Group>
+        <Label resid="Tab.Label"/>
+      </CustomTab>
+    </ExtensionPoint></DesktopFormFactor></Host></Hosts>
     <Resources>
-      <bt:Images><bt:Image id="Icon" DefaultValue="https://localhost:17864/office/icon.png"/></bt:Images>
+      <bt:Images>
+        <bt:Image id="New.Icon16" DefaultValue="https://localhost:17864/office/icons/new-16.png"/>
+        <bt:Image id="New.Icon32" DefaultValue="https://localhost:17864/office/icons/new-32.png"/>
+        <bt:Image id="New.Icon80" DefaultValue="https://localhost:17864/office/icons/new-80.png"/>
+        <bt:Image id="Picture.Icon16" DefaultValue="https://localhost:17864/office/icons/recognize-16.png"/>
+        <bt:Image id="Picture.Icon32" DefaultValue="https://localhost:17864/office/icons/recognize-32.png"/>
+        <bt:Image id="Picture.Icon80" DefaultValue="https://localhost:17864/office/icons/recognize-80.png"/>
+        <bt:Image id="Edit.Icon16" DefaultValue="https://localhost:17864/office/icons/edit-16.png"/>
+        <bt:Image id="Edit.Icon32" DefaultValue="https://localhost:17864/office/icons/edit-32.png"/>
+        <bt:Image id="Edit.Icon80" DefaultValue="https://localhost:17864/office/icons/edit-80.png"/>
+        <bt:Image id="Status.Icon16" DefaultValue="https://localhost:17864/office/icons/status-16.png"/>
+        <bt:Image id="Status.Icon32" DefaultValue="https://localhost:17864/office/icons/status-32.png"/>
+        <bt:Image id="Status.Icon80" DefaultValue="https://localhost:17864/office/icons/status-80.png"/>
+        <bt:Image id="Cancel.Icon16" DefaultValue="https://localhost:17864/office/icons/cancel-16.png"/>
+        <bt:Image id="Cancel.Icon32" DefaultValue="https://localhost:17864/office/icons/cancel-32.png"/>
+        <bt:Image id="Cancel.Icon80" DefaultValue="https://localhost:17864/office/icons/cancel-80.png"/>
+        <bt:Image id="Settings.Icon16" DefaultValue="https://localhost:17864/office/icons/settings-16.png"/>
+        <bt:Image id="Settings.Icon32" DefaultValue="https://localhost:17864/office/icons/settings-32.png"/>
+        <bt:Image id="Settings.Icon80" DefaultValue="https://localhost:17864/office/icons/settings-80.png"/>
+        <bt:Image id="Draft.Icon16" DefaultValue="https://localhost:17864/office/icons/draft-16.png"/>
+        <bt:Image id="Draft.Icon32" DefaultValue="https://localhost:17864/office/icons/draft-32.png"/>
+        <bt:Image id="Draft.Icon80" DefaultValue="https://localhost:17864/office/icons/draft-80.png"/>
+        <bt:Image id="Protect.Icon16" DefaultValue="https://localhost:17864/office/icons/protect-16.png"/>
+        <bt:Image id="Protect.Icon32" DefaultValue="https://localhost:17864/office/icons/protect-32.png"/>
+        <bt:Image id="Protect.Icon80" DefaultValue="https://localhost:17864/office/icons/protect-80.png"/>
+        <bt:Image id="Help.Icon16" DefaultValue="https://localhost:17864/office/icons/help-16.png"/>
+        <bt:Image id="Help.Icon32" DefaultValue="https://localhost:17864/office/icons/help-32.png"/>
+        <bt:Image id="Help.Icon80" DefaultValue="https://localhost:17864/office/icons/help-80.png"/>
+      </bt:Images>
       <bt:Urls>
         <bt:Url id="New.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=new"/>
+        <bt:Url id="Picture.Url" DefaultValue="https://localhost:17864/office/batch.html"/>
         <bt:Url id="Edit.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=edit"/>
-        <bt:Url id="Editor.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=ocr"/>
+        <bt:Url id="Status.Url" DefaultValue="https://localhost:17864/office/utility.html?mode=status"/>
+        <bt:Url id="Cancel.Url" DefaultValue="https://localhost:17864/office/utility.html?mode=cancel"/>
+        <bt:Url id="Settings.Url" DefaultValue="https://localhost:17864/office/utility.html?mode=settings"/>
+        <bt:Url id="Draft.Url" DefaultValue="https://localhost:17864/office/taskpane.html?mode=draft"/>
+        <bt:Url id="Protect.Url" DefaultValue="https://localhost:17864/office/utility.html?mode=protect"/>
+        <bt:Url id="Help.Url" DefaultValue="https://localhost:17864/office/utility.html?mode=help"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="Tab.Label" DefaultValue="IguanaTex Bridge"/>
-        <bt:String id="Group.Label" DefaultValue="LaTeX 公式"/>
+        <bt:String id="Formulas.Group" DefaultValue="LaTeX 公式"/>
+        <bt:String id="Automation.Group" DefaultValue="转换管理"/>
+        <bt:String id="Compatibility.Group" DefaultValue="跨平台"/>
         <bt:String id="New.Label" DefaultValue="新建公式"/>
+        <bt:String id="Picture.Label" DefaultValue="图片转公式"/>
         <bt:String id="Edit.Label" DefaultValue="编辑选中公式"/>
-        <bt:String id="Editor.Label" DefaultValue="截图识别"/>
+        <bt:String id="Status.Label" DefaultValue="转换状态"/>
+        <bt:String id="Cancel.Label" DefaultValue="取消转换"/>
+        <bt:String id="Settings.Label" DefaultValue="转换设置"/>
+        <bt:String id="Draft.Label" DefaultValue="编辑失败草稿"/>
+        <bt:String id="Protect.Label" DefaultValue="检查与同步源码"/>
+        <bt:String id="Help.Label" DefaultValue="环境与帮助"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="New.Description" DefaultValue="新建 LaTeX 公式，预览后插入当前幻灯片；源码与字号可由原 IguanaTeX 继续编辑。"/>
-        <bt:String id="Edit.Description" DefaultValue="读取选中 IguanaTeX / Bridge 公式的源码、引擎和字号，修改后更新原位置。支持图片及单公式 Shape 组合。"/>
-        <bt:String id="Editor.Description" DefaultValue="打开公式编辑面板：输入文字或放置截图，经 OpenAI API 生成 LaTeX，预览并插入或更新当前幻灯片中的公式。"/>
+        <bt:String id="New.Description" DefaultValue="新建 LaTeX 公式，预览后插入当前幻灯片。"/>
+        <bt:String id="Picture.Description" DefaultValue="将同一页选中的一张或多张图片发送给 OpenAI 逐张识别并转换为可编辑公式。"/>
+        <bt:String id="Edit.Description" DefaultValue="读取所选公式的源码、引擎和字号，修改后更新。"/>
+        <bt:String id="Status.Description" DefaultValue="查看 AI 请求的进度和最近结果。"/>
+        <bt:String id="Cancel.Description" DefaultValue="停止当前 AI 请求；已发送的请求可能产生用量。"/>
+        <bt:String id="Settings.Description" DefaultValue="设置图片转公式时的字号、颜色和对齐方式。"/>
+        <bt:String id="Draft.Description" DefaultValue="选中转换失败的原图片，恢复已保存的源码草稿。"/>
+        <bt:String id="Protect.Description" DefaultValue="检查当前演示文稿的公式并同步源码备份。"/>
+        <bt:String id="Help.Description" DefaultValue="查看使用方式、PowerPoint 兼容性和本机 LaTeX 环境。"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
