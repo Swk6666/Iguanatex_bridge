@@ -178,7 +178,14 @@
                 status(active || loading ? '请等待当前操作完成后再发送，草稿已保留。' : '编辑器正在编译或写入，请稍后再发送。');
                 return;
             }
-            if (!configured) { q('.chat-settings').open = true; status('请先填写并保存 OpenAI API Key。'); return; }
+            if (!configured) {
+                // A key may have been saved in the separate WPS toolbar window since this panel opened.
+                setBusy(true);
+                try { showConfig(await options.api('chat/config', {})); }
+                catch (e) { status(e.message); return; }
+                finally { setBusy(false); }
+                if (!configured) { q('.chat-settings').open = true; status('请先填写并保存 OpenAI API Key。'); return; }
+            }
             if (!prompt.value.trim() && !chosen) { status('请输入文字或选择一张图片。'); return; }
             setBusy(true);
             status(guideSaved !== null && guide.value !== guideSaved ? '正在发送到 OpenAI…（AI 指令有未保存的修改，本次使用已保存的版本）' : '正在发送到 OpenAI…');

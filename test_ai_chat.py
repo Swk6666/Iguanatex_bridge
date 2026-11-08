@@ -72,6 +72,7 @@ class ApiSettingsTests(unittest.TestCase):
             self.assertEqual(self.settings.credentials()[0], 'environment-secret')
             self.settings.save({'api_key': 'local-secret'})
             self.assertEqual(self.settings.credentials()[0], 'local-secret')
+            self.assertEqual(self.settings.public()['key_source'], '本机设置')
 
     def test_environment_key_and_validation(self):
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'env-secret'}):
@@ -193,6 +194,15 @@ class ChatJobTests(unittest.TestCase):
             if result['status'] in TERMINAL: return result
             time.sleep(.01)
         self.fail('job did not finish')
+
+    def test_request_uses_manual_key_before_environment_and_repository(self):
+        self.jobs.settings.shared_key_path.write_text('repository-key', encoding='utf-8')
+        self.backend.release.set()
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'environment-key'}), \
+                patch.object(self.backend, 'answer', wraps=self.backend.answer) as send:
+            job = self.jobs.start({'message': 'test'})
+            self.assertEqual(self.finished(job)['status'], 'succeeded')
+            self.assertEqual(send.call_args.args[:2], ('test-key', DEFAULT_MODEL))
 
     def test_project_instructions_are_read_for_every_request(self):
         self.backend.release.set()

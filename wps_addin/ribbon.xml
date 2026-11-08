@@ -12,6 +12,7 @@
           <button id="IguanaStatus" getLabel="GetConversionStatus" size="large" getImage="GetImage" onAction="OnConversionStatus" screentip="查看后台转换进度与结果"/>
           <button id="IguanaCancel" label="取消转换" getImage="GetImage" onAction="OnCancelConversion"/>
           <button id="IguanaSettings" label="转换设置" getImage="GetImage" onAction="OnConversionSettings"/>
+          <button id="IguanaApiSettings" label="API 设置" getImage="GetImage" onAction="OnApiSettings" screentip="手动设置 OpenAI 密钥与模型，本机设置优先使用"/>
           <button id="IguanaDraft" label="编辑失败草稿" getImage="GetImage" onAction="OnEditDraft" screentip="选中转换失败的原图，继续编辑已保存的草稿"/>
         </group>
         <group id="IguanaTexCompatibility" label="跨平台">

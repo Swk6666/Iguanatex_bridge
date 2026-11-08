@@ -24,7 +24,7 @@
         var text = e && e.message ? e.message : String(e);
         if (/额度|余额|insufficient_quota/.test(text)) return 'OpenAI 额度不足：请检查 API 账单和额度。';
         if (/请求受限|速率|rate limit/i.test(text)) return 'OpenAI 请求过于频繁：请稍后重试。';
-        if (/API Key|密钥/.test(text)) return 'OpenAI 密钥无效：请在 AI 助手的 API 设置中更新密钥。';
+        if (/API Key|密钥/.test(text)) return 'OpenAI 密钥无效：请在 IguanaTex 功能区的“API 设置”中更新密钥。';
         if (/网络|连接|超时|fetch|network/i.test(text)) return '网络连接失败：请检查网络和本地服务后重试。';
         if (/导出|另存图片/.test(text)) return 'WPS 无法导出图片：请确认选中的是图片，并检查 WPS 版本。';
         if (/LaTeX 编译失败|LaTeX 字体缺字/.test(text)) return 'LaTeX 编译失败：可选择原图后点击“编辑失败草稿”查看源码和日志。';

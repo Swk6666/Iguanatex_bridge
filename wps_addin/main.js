@@ -3,7 +3,8 @@ var bridgeRibbon = null;
 function OnAddinLoad(ribbon) { bridgeRibbon = ribbon; return true; }
 // Own SVG icons: WPS shows a "?" placeholder for imageMso names it does not know.
 var bridgeIcons = {IguanaNew: 'new', IguanaRecognize: 'recognize', IguanaEdit: 'edit', IguanaStatus: 'status',
-    IguanaCancel: 'cancel', IguanaSettings: 'settings', IguanaDraft: 'draft', IguanaProtect: 'protect', IguanaHelp: 'help'};
+    IguanaCancel: 'cancel', IguanaSettings: 'settings', IguanaApiSettings: 'settings',
+    IguanaDraft: 'draft', IguanaProtect: 'protect', IguanaHelp: 'help'};
 function GetImage(control) { return 'images/' + (bridgeIcons[control && control.Id] || 'new') + '.svg'; }
 function UpdateRecognitionUI() {
     try { if (bridgeRibbon) bridgeRibbon.InvalidateControl('IguanaStatus'); } catch (ignored) {}
@@ -12,6 +13,7 @@ function GetConversionStatus() { return window.IguanaRecognize ? window.IguanaRe
 function OnConversionStatus() { ShowBridgeMessage(window.IguanaRecognize.status().detail); return true; }
 function OnCancelConversion() { setTimeout(function () { window.IguanaRecognize.cancel(); }, 10); return true; }
 function OnConversionSettings() { return bridgeDialog('settings'); }
+function OnApiSettings() { return bridgeDialog('api'); }
 function OnEditDraft() { return bridgeDialog('draft'); }
 function bridgeBase() { return window.location.href.split('?')[0].replace(/[^/]*$/, ''); }
 // Conversion results open in a non-modal window: alert() would block WPS until dismissed.
@@ -29,11 +31,11 @@ function bridgeDialog(mode) {
     // Nested synchronous callbacks can deadlock the Linux WPS web dialog loader.
     setTimeout(function () {
         try {
-            var base = bridgeBase(), settings = mode === 'settings';
-            var page = settings ? 'workflow.html?mode=settings' : 'editor.html?mode=' + mode;
-            // The four conversion settings fit a compact window; the editor needs the full workbench.
-            wps.ShowDialog(base + page + '&session=' + Date.now(), settings ? '转换设置' : 'IguanaTex · LaTeX 公式',
-                settings ? 600 : 920, settings ? 540 : 760, false);
+            var base = bridgeBase(), compact = mode === 'settings' || mode === 'api';
+            var page = compact ? 'workflow.html?mode=' + mode : 'editor.html?mode=' + mode;
+            var title = mode === 'settings' ? '转换设置' : mode === 'api' ? 'API 设置' : 'IguanaTex · LaTeX 公式';
+            wps.ShowDialog(base + page + '&session=' + Date.now(), title,
+                compact ? 600 : 920, compact ? 540 : 760, false);
         } catch (e) { alert('无法打开公式编辑器：' + e.message); }
     }, 10);
     return true;

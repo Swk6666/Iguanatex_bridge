@@ -23,6 +23,11 @@ body{height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .field input{width:72px;min-height:0;height:100%;border:0;border-radius:0;box-shadow:none!important;padding:0 4px 0 10px;font-weight:500;font-variant-numeric:tabular-nums}
 .field .unit{display:flex;align-items:center;padding:0 10px 0 2px;color:var(--muted);font-size:12px}
 .setting-row select{min-width:128px;height:32px}
+.api-form{padding:16px 22px 20px}
+.api-form label{display:block;font-weight:600;margin-top:14px}
+.api-form input{display:block;width:100%;margin-top:6px;font-weight:400}
+.api-form p{margin-top:6px;color:var(--muted);font-size:12px}
+.api-source{display:inline-block;padding:3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent-strong);font-size:12px;font-weight:600}
 .color-field{display:inline-flex;align-items:center;gap:8px}
 .color-field code{font:12px var(--mono);color:var(--text-2);min-width:62px}
 input[type=color]{width:44px;height:32px;padding:3px;cursor:pointer}
@@ -61,6 +66,16 @@ input[type=color]::-webkit-color-swatch{border:1px solid rgb(0 0 0 / .12);border
   <div class="setting-row"><div class="setting-text"><label for="align">对齐方式</label><p>公式相对于原图片的位置</p></div><select id="align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div>
   <div class="setting-row"><div class="setting-text"><label for="review">逐张对照校对</label><p>替换前逐张确认；关闭时直接在后台转换</p></div><span class="switch"><input id="review" type="checkbox"><span aria-hidden="true"></span></span></div>
 </section>
+<section id="apiSettings" class="settings-card" hidden>
+  <div class="card-head"><h2>OpenAI API 设置</h2><p>用于图片转公式和 AI 助手。</p></div>
+  <div class="api-form">
+    <span id="apiSource" class="api-source">正在读取…</span>
+    <label for="apiKey">API Key<input id="apiKey" type="password" autocomplete="new-password" spellcheck="false" maxlength="1024" placeholder="已保存时留空即可"></label>
+    <p>手动保存的密钥优先于环境变量和仓库配置，保存在本机；留空不会更改已有密钥。</p>
+    <label for="apiModel">模型<input id="apiModel" type="text" spellcheck="false" maxlength="128" placeholder="例如 gpt-6-astra"></label>
+    <p>文字和图片会发送至 OpenAI，并按 API 用量计费。</p>
+  </div>
+</section>
 <section id="message" class="settings-card" hidden><div class="card-head"><h2>图片转公式</h2></div><pre id="messageText"></pre></section>
 <section id="reviewPanel" class="review" hidden>
   <p class="lead">请检查识别结果：选择“替换为公式”才会替换该图片，跳过则保留原图。</p>
@@ -72,6 +87,7 @@ input[type=color]::-webkit-color-swatch{border:1px solid rgb(0 0 0 / .12);border
 </main>
 <footer class="actionbar"><div id="status" role="status" aria-live="polite">正在读取…</div>
   <div class="actions" id="settingsActions" hidden><button id="settingsClose" type="button">关闭</button><button id="save" class="primary" type="button">保存设置</button></div>
+  <div class="actions" id="apiActions" hidden><button id="apiClose" type="button">关闭</button><button id="apiSave" class="primary" type="button">保存设置</button></div>
   <div class="actions" id="messageActions" hidden><button id="messageClose" class="primary" type="button">知道了</button></div>
   <div class="actions" id="reviewActions" hidden><button id="cancel" class="danger" type="button">取消整个批次</button><span class="gap"></span><button id="skip" type="button">跳过，保留原图</button><button id="accept" class="primary" type="button">替换为公式</button></div>
 </footer>

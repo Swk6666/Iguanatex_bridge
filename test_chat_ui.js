@@ -50,7 +50,7 @@ async function fixture(options={}) {
         click:a=>element('panel [data-action="'+a+'"]').onclick(),
         prompt:text=>{element('panel .chat-prompt').value=text;},
         choose(file={type:'image/png',size:50,name:'test.png'}){const el=element('panel input[type=file]');el.files=[file];el.onchange();},
-        setCanStart(v){canStart=v;}};
+        setCanStart(v){canStart=v;},configureExternally(){config.configured=true;config.key_source='本机设置';}};
 }
 let count=0;
 async function test(fn){await fn();count++;}
@@ -92,6 +92,13 @@ const button=(f,label)=>f.created.find(e=>e.textContent===label&&typeof e.onclic
         f.element('panel .chat-key').value='secret';f.element('panel .chat-model').value='gpt-6-astra';await f.click('save');
         assert.equal(f.element('panel .chat-key').value,'');assert(!JSON.stringify([...f.storage]).includes('secret'));
         await f.click('send');assert.equal(f.calls.filter(c=>c[0]==='chat/start').length,1);
+    });
+    await test(async()=>{
+        const f=await fixture({configured:false});f.prompt('设置完成后发送');f.choose();
+        f.configureExternally();await f.click('send');
+        const request=f.calls.find(c=>c[0]==='chat/start');
+        assert.equal(request[1].message,'设置完成后发送');assert.equal(request[1].data,'abc');
+        assert.equal(f.calls.filter(c=>c[0]==='chat/config').length,2,'an open panel picks up an externally saved key');
     });
     await test(async()=>{
         const f=await fixture();await f.click('send');
