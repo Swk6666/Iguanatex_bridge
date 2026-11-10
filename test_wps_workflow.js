@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('nod
 async function fixture(mode, options={}) {
     const nodes={},requests=[],events={},closed=[];
     const $=id=>nodes[id]||(nodes[id]={value:'',checked:false,hidden:true,textContent:'',src:''});
-    let config={configured:true,key_source:'仓库密钥',model:'gpt-6-astra'};
+    let config={configured:true,key_source:'环境变量',model:'gpt-6-astra'};
     const sandbox={URLSearchParams,location:{search:mode==='settings'?'?mode=settings':mode==='api'?'?mode=api':mode==='message'?'?mode=message':'?mode=review&id=test-id',hash:'#'+encodeURIComponent('转换完成：成功 1\n第 2 张：失败')},
         document:{getElementById:$},window:{addEventListener(name,fn){events[name]=fn;},close(){closed.push(true);}},
         fetch:async(url,req)=>{
@@ -32,7 +32,7 @@ async function fixture(mode, options={}) {
     assert.equal(s.$('status').className,'');assert.equal(s.$('save').disabled,false);
     const a=await fixture('api');
     assert.equal(a.$('apiSettings').hidden,false);assert.equal(a.$('apiActions').hidden,false);
-    assert.equal(a.$('apiModel').value,'gpt-6-astra');assert.match(a.$('apiSource').textContent,/仓库密钥/);
+    assert.equal(a.$('apiModel').value,'gpt-6-astra');assert.match(a.$('apiSource').textContent,/环境变量/);
     assert.equal(a.$('apiKey').value,'','saved keys must never be shown in the input');
     a.$('apiKey').value='  local-key  ';a.$('apiModel').value='new-model';await a.$('apiSave').onclick();
     const saved=a.requests.filter(x=>x.url==='/api/chat/config').at(-1).body;

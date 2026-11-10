@@ -50,15 +50,6 @@ class ApiSettings:
     def __init__(self, directory=None):
         self.directory = Path(directory or state_dir())
         self.path = self.directory / 'openai-api.json'
-        self.shared_key_path = (self.directory if directory is not None else Path(__file__).parent) / 'shared-openai-key'
-
-    def shared_key(self):
-        try:
-            return self.shared_key_path.read_text(encoding='utf-8').strip()
-        except FileNotFoundError:
-            return ''
-        except (OSError, UnicodeDecodeError):
-            raise ValueError('仓库中的 OpenAI 密钥文件无法读取。') from None
 
     def _read(self):
         try:
@@ -73,7 +64,7 @@ class ApiSettings:
 
     def credentials(self):
         data = self._read()
-        key = data.get('api_key') or os.environ.get('OPENAI_API_KEY', '') or self.shared_key()
+        key = data.get('api_key') or os.environ.get('OPENAI_API_KEY', '')
         if not key:
             raise ValueError('请先展开 API 设置，填写并保存 OpenAI API Key。')
         # Validate local/environment values too: header errors can echo credentials.
@@ -94,7 +85,7 @@ class ApiSettings:
 
     def public(self):
         data = self._read()
-        source = '本机设置' if data.get('api_key') else '环境变量' if os.environ.get('OPENAI_API_KEY') else '仓库密钥' if self.shared_key() else ''
+        source = '本机设置' if data.get('api_key') else '环境变量' if os.environ.get('OPENAI_API_KEY') else ''
         return {'configured': bool(source), 'model': data.get('model', DEFAULT_MODEL), 'endpoint': ENDPOINT,
                 'key_source': source}
 

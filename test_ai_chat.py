@@ -64,10 +64,11 @@ class ApiSettingsTests(unittest.TestCase):
                 self.settings.credentials()
         self.assertEqual(self.settings.public()['model'], 'gpt-6-astra')
 
-    def test_shared_key_and_precedence(self):
-        self.settings.shared_key_path.write_text('repository-secret\n')
-        self.assertEqual(self.settings.credentials()[0], 'repository-secret')
-        self.assertEqual(self.settings.public()['key_source'], '仓库密钥')
+    def test_repository_key_is_ignored_and_local_key_takes_precedence(self):
+        (self.settings.directory / 'shared-openai-key').write_text('repository-secret\n')
+        self.assertFalse(self.settings.public()['configured'])
+        with self.assertRaisesRegex(ValueError, 'API Key'):
+            self.settings.credentials()
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'environment-secret'}):
             self.assertEqual(self.settings.credentials()[0], 'environment-secret')
             self.settings.save({'api_key': 'local-secret'})
@@ -195,8 +196,7 @@ class ChatJobTests(unittest.TestCase):
             time.sleep(.01)
         self.fail('job did not finish')
 
-    def test_request_uses_manual_key_before_environment_and_repository(self):
-        self.jobs.settings.shared_key_path.write_text('repository-key', encoding='utf-8')
+    def test_request_uses_manual_key_before_environment(self):
         self.backend.release.set()
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'environment-key'}), \
                 patch.object(self.backend, 'answer', wraps=self.backend.answer) as send:

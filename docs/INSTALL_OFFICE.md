@@ -6,7 +6,7 @@
 
 - Python 3.10 或以上。
 - macOS：MacTeX（推荐完整安装，包含中文宏包）；Windows：TeX Live 或 MiKTeX，安装 `amsmath`、`amssymb`、`bm`，需要中文时安装 `ctex`、Fandol 字体并选 XeLaTeX。
-- AI 对话需要 OpenAI API Key（本机设置、环境变量或仓库共享密钥）；无需 Chrome 或网页登录。
+- AI 对话需要 OpenAI API Key（本机设置或环境变量）；无需 Chrome 或网页登录。
 - Office 加载项需要访问微软的 Office.js CDN；图片识别需要访问 OpenAI API。
 
 公式仍在本机编译。Office 加载项通过本地 HTTPS 连接服务。独立编辑器与 WPS 使用 HTTP 17863；Office 使用 HTTPS 17864，两个监听器只绑定 `127.0.0.1`，共享任务与登录浏览器。

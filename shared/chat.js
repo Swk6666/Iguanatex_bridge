@@ -18,7 +18,7 @@
             '<details class="chat-settings"><summary>' + icon('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>') + 'API 设置</summary><div class="chat-settings-body"><p class="chat-config-status">正在读取…</p>' +
             '<label>OpenAI API Key<input class="chat-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="已保存时留空即可"></label>' +
             '<label>模型<input class="chat-model" type="text" spellcheck="false" value="gpt-6-astra" maxlength="128"></label>' +
-            '<p class="chat-note">密钥不会写入 PPTX；本机密钥或仓库共享密钥均可使用。<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">获取 API Key</a></p>' +
+            '<p class="chat-note">密钥不会写入 PPTX；可使用本机设置或环境变量。<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">获取 API Key</a></p>' +
             '<div class="chat-actions"><button type="button" data-action="save">保存设置</button><button type="button" data-action="clear-key">删除本机密钥</button></div></div></details></div>' +
             '<div class="chat-history" role="region" aria-label="OpenAI 对话记录"></div>' +
             '<div class="chat-composer"><div class="chat-box"><label class="chat-prompt-label"><span class="chat-sr">发送给 OpenAI</span><textarea class="chat-prompt" rows="3" maxlength="8000" spellcheck="false" placeholder="描述公式，或附图让 AI 识别…"></textarea></label>' +

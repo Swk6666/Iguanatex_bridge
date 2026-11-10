@@ -5,7 +5,7 @@
 - 名称：IguanaTex Bridge。
 - 用途：自己的独立桌面公式编辑器，界面沿用 Ubuntu WPS 版，新增截图转 TeX；附带 macOS / Windows PowerPoint 与 Ubuntu WPS 加载项。不依赖上游 IguanaTeX，保留其源码标签兼容性。
 - 当前版本：见 [VERSION](VERSION)。
-- 管理方式：本地 Git，主分支 `main`；远程 `origin` 为本人指定的私有仓库 [Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。
+- 管理方式：本地 Git，主分支 `main`；远程 `origin` 为项目仓库 [Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。请勿将密钥提交到仓库。
 - 访问安排：源码、安装包和实验文件由本人保管。项目按私人方式管理，既有代码及第三方许可保持原样。
 - 当前目录也是本机后台服务的安装位置。迁移目录时按 [迁移说明](docs/INSTALL_UBUNTU.md#升级与迁移) 重新注册。
 
@@ -17,7 +17,7 @@
 - [x] SVG 字形轮廓和源码保留，保存后继续编辑。
 - [x] 原宽高、保留高度、按字号重设尺寸；字号 4–200 pt。
 - [x] Ubuntu 克隆后 `bash install.sh` 一键安装系统依赖、注册插件和后台自动启动。
-- [x] 本地 Git、GitHub 私有仓库、安装手册、变更记录、白名单打包。
+- [x] 本地 Git、GitHub 仓库、安装手册、变更记录、白名单打包。
 
 - [x] 0.4.0 Office.js 加载项、HTTPS 启动、共享图片识别界面和可配置 DeepSeek 网页自动化。
 - [x] 独立桌面 GUI、截图自动识别回填和预览、剪贴板输出、文件导出与源码重开。
@@ -96,7 +96,7 @@ python3 scripts/build_release.py
 git tag -a v版本号 -m "版本说明"
 ```
 
-6. 推送已确认的提交和标签到本人私有仓库，在 GitHub Releases 中创建对应版本，上传 ZIP 及 `.sha256` 两个文件。不要把 `.venv` 或实验文稿作为版本附件。
+6. 推送已确认的提交和标签到项目仓库，在 GitHub Releases 中创建对应版本，上传 ZIP 及 `.sha256` 两个文件。不要把 `.venv`、密钥或实验文稿作为版本附件。
 
 不移动已经发布的版本标签。日常功能开发用新提交，准备下一次发行时递增版本号。仓库维持 Private；GitHub 发布版本不改变仓库的访问范围。
 
@@ -109,4 +109,4 @@ git bundle create ../iguanatex-bridge-history.bundle --all
 git bundle verify ../iguanatex-bridge-history.bundle
 ```
 
-Git bundle 只包含已提交的仓库历史，不含忽略文件或未提交修改。真实文稿请随个人文件备份另行保存。GitHub 私有仓库保存已推送的代码历史和版本附件，实验目录仍需按需本地备份。
+Git bundle 只包含已提交的仓库历史，不含忽略文件或未提交修改。真实文稿请随个人文件备份另行保存。GitHub 仓库保存已推送的代码历史和版本附件；请确认仓库可见性，实验目录仍需按需本地备份。

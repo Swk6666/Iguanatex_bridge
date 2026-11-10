@@ -2,7 +2,7 @@
 
 在 WPS 工具栏中打开公式编辑器，编写完整 LaTeX 文档、预览并插入或更新公式。内置 OpenAI API 对话，支持文字、截图和连续追问，显示完整回答并按需采用 LaTeX。另有独立桌面 GUI 和 macOS / Windows PowerPoint 加载项，支持 SVG / PNG、字号与源码保存，以及与原 IguanaTeX 的源码兼容。
 
-当前版本 **0.6.1**。个人私有仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。访问仓库及版本附件需要有权限的 GitHub 账号。
+当前版本 **0.6.1**。项目仓库：[Swk6666/Iguanatex_bridge](https://github.com/Swk6666/Iguanatex_bridge)。请勿将 API 密钥提交到仓库。
 
 [下载最新安装包](https://github.com/Swk6666/Iguanatex_bridge/releases/latest) · [Ubuntu 完整安装流程](docs/INSTALL_UBUNTU.md)
 
@@ -10,7 +10,7 @@
 
 0.4.2 修复公式更新时的比例失真；WPS 预览和操作按钮固定可见，新建公式记住上次字号（首次 18 pt），成功写入后自动关闭窗口。
 
-WPS、PowerPoint 加载项与浏览器编辑器的 AI 面板使用 **OpenAI API**（0.5.0 时为 DeepSeek API），默认模型 `gpt-6-astra`，无需 Chrome 或网页登录。可在面板的“API 设置”中保存本机 **OpenAI API Key**，也可使用环境变量或仓库共享密钥。详见 [API 对话使用说明](docs/API_CHAT.md)。
+WPS、PowerPoint 加载项与浏览器编辑器的 AI 面板使用 **OpenAI API**（0.5.0 时为 DeepSeek API），默认模型 `gpt-6-astra`，无需 Chrome 或网页登录。可在面板的“API 设置”中保存本机 **OpenAI API Key**，也可使用环境变量。详见 [API 对话使用说明](docs/API_CHAT.md)。
 
 ## 从这里开始
 
@@ -28,7 +28,7 @@ WPS、PowerPoint 加载项与浏览器编辑器的 AI 面板使用 **OpenAI API*
 
 ## 在另一台 Ubuntu 快速安装
 
-准备支持 **JS 加载项**的 WPS 演示，以及能访问本私有仓库的 GitHub 账号。当前已实测 WPS 365 教育版 12.8.2.21176；其他版本的加载项能力需确认。
+准备支持 **JS 加载项**的 WPS 演示。当前已实测 WPS 365 教育版 12.8.2.21176；其他版本的加载项能力需确认。
 
 **克隆后运行一个安装脚本即可：**
 
@@ -39,9 +39,9 @@ cd "$HOME/Applications/iguanatex_bridge" &&
 bash install.sh
 ```
 
-已有本项目的 Git 克隆时，直接在该目录执行 `bash install.sh`。安装位置不限于 `~/Applications/`，无需再下载 ZIP、解压或搬动目录。若电脑没有 Git，先运行 `sudo apt update && sudo apt install -y git`；私有仓库的首次身份验证见 [完整安装说明](docs/INSTALL_UBUNTU.md)。
+已有本项目的 Git 克隆时，直接在该目录执行 `bash install.sh`。安装位置不限于 `~/Applications/`，无需再下载 ZIP、解压或搬动目录。若电脑没有 Git，先运行 `sudo apt update && sudo apt install -y git`；安装细节见 [完整安装说明](docs/INSTALL_UBUNTU.md)。
 
-API 对话不需要浏览器或额外 Python 依赖。安装后在插件里填写 OpenAI API Key（未填写时使用仓库共享密钥）；公式编译无需密钥。独立 Qt 桌面 GUI 仍使用旧版网页识别，只有该模式需要 `--with-ocr`、Chrome 和网页登录。
+API 对话不需要浏览器或额外 Python 依赖。安装后在插件里填写 OpenAI API Key，或设置 `OPENAI_API_KEY` 环境变量；公式编译无需密钥。独立 Qt 桌面 GUI 仍使用旧版网页识别，只有该模式需要 `--with-ocr`、Chrome 和网页登录。
 
 脚本会检查并补齐 Ubuntu 的 Python / venv、XeLaTeX、中文和扩展宏包，然后安装 Python 依赖、注册 WPS 插件并配置后台自动启动。**用普通用户运行，不要用 `sudo bash install.sh`**；只有缺少系统包时脚本才调用 `sudo`，可能需要输入系统密码。TeX Live 首次下载较大，请等待完成。
 
