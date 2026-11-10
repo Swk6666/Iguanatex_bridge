@@ -8,8 +8,8 @@
 <button id="start" class="primary" disabled>开始转换</button><button id="cancel" disabled>取消转换</button>
 <p id="progressText" role="status" aria-live="polite">尚未开始转换。</p><pre id="errors"></pre>
 <div id="review" hidden><h3>请校对本张图片</h3><p class="note">核对后选择替换、跳过或取消。</p>
-<label>原图</label><img id="reviewOriginal" class="review-image" alt="原图片">
-<label>识别结果</label><img id="reviewPreview" class="review-image" alt="公式预览">
+<div class="compare"><figure class="panel"><figcaption>原图片</figcaption><div class="image"><img id="reviewOriginal" alt="原图片"></div></figure>
+<figure class="panel result"><figcaption>生成公式</figcaption><div class="image"><img id="reviewPreview" alt="生成公式"></div></figure></div>
 <div><button id="accept" class="primary">替换原图</button><button id="skip">跳过本张</button><button id="stopReview">取消转换</button></div></div>
 <p id="message" class="note"></p></section></main>
 <script src="adapter.js"></script><script src="dialog-bridge.js"></script><script src="batch.js"></script></body></html>

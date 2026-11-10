@@ -138,14 +138,14 @@ class OfficeServiceTests(unittest.TestCase):
         groups = root.findall('.//o:CustomTab/o:Group', ns)
         controls = [[node.get('id') for node in group.findall('o:Control', ns)] for group in groups]
         self.assertEqual(controls, [['IgBridge.New','IgBridge.Picture','IgBridge.Edit'],
-            ['IgBridge.Status','IgBridge.Cancel','IgBridge.Settings','IgBridge.Draft'],
+            ['IgBridge.Status','IgBridge.Cancel','IgBridge.Settings','IgBridge.Api','IgBridge.Draft'],
             ['IgBridge.Protect','IgBridge.Help']])
         actions = root.findall('.//o:CustomTab/o:Group/o:Control/o:Action', ns)
         action_type = '{http://www.w3.org/2001/XMLSchema-instance}type'
-        self.assertEqual([action.get(action_type) for action in actions], ['ExecuteFunction'] * 9)
+        self.assertEqual([action.get(action_type) for action in actions], ['ExecuteFunction'] * 10)
         self.assertEqual([action.find('o:FunctionName', ns).text for action in actions],
             ['igBridgeNew','igBridgePicture','igBridgeEdit','igBridgeStatus','igBridgeCancel',
-             'igBridgeSettings','igBridgeDraft','igBridgeProtect','igBridgeHelp'])
+             'igBridgeSettings','igBridgeApi','igBridgeDraft','igBridgeProtect','igBridgeHelp'])
         runtime = root.find('.//o:Host/o:Runtimes/o:Runtime', ns)
         function_file = root.find('.//o:Host/o:DesktopFormFactor/o:FunctionFile', ns)
         self.assertEqual((runtime.get('lifetime'), runtime.get('resid')), ('long', function_file.get('resid')))

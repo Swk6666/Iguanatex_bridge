@@ -4,16 +4,29 @@
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head>
 <body><header class="app-header"><div class="mark" aria-hidden="true">∑</div><h1>IguanaTex <span>Bridge</span></h1></header>
 <main class="utility">
-<section id="settings" hidden><h2>转换设置</h2><p class="lead">用于“图片转公式”和失败草稿。</p>
-<label>公式字号 <input id="size" type="number" min="4" max="200" step="0.5"> pt</label>
-<label>公式颜色 <input id="color" type="color"></label>
-<label>对齐原图片 <select id="align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></label>
-<label>替换前逐张对照校对 <input id="reviewSetting" type="checkbox"></label>
-<p class="note">启用校对后，每张图会等待确认；未启用时自动替换。</p><button id="save" class="primary">保存设置</button></section>
-<section id="progress" hidden><h2>转换状态</h2><p id="progressText">正在读取…</p><pre id="progressErrors"></pre><button id="refresh">刷新状态</button><button id="cancel">取消转换</button>
-<div id="review" hidden><h3>请校对本张图片</h3><label>原图</label><img id="reviewOriginal" class="review-image" alt="原图片"><label>识别结果</label><img id="reviewPreview" class="review-image" alt="公式预览"><div><button id="accept" class="primary">替换原图</button><button id="skip">跳过本张</button><button id="stopReview">取消转换</button></div></div>
-<p class="note">转换时可切换幻灯片，请保持批量转换窗口和演示文稿打开。已发送的请求可能产生 API 用量。</p></section>
+<section id="settings" class="settings-card" hidden>
+  <div class="card-head"><h2>图片转公式设置</h2><p>应用于之后转换的图片，已替换的公式不受影响。</p></div>
+  <div class="setting-row"><div class="setting-text"><label for="size">统一字号</label><p>转换后公式使用的字号</p></div><span class="field"><input id="size" type="number" min="4" max="200" step="0.5"><span class="unit">pt</span></span></div>
+  <div class="setting-row"><div class="setting-text"><label for="color">公式颜色</label><p>公式文字与符号的颜色</p></div><span class="color-field"><input id="color" type="color"><code id="colorValue"></code></span></div>
+  <div class="setting-row"><div class="setting-text"><label for="align">对齐方式</label><p>公式相对于原图片的位置</p></div><select id="align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div>
+  <div class="setting-row"><div class="setting-text"><label for="reviewSetting">逐张对照校对</label><p>替换前逐张确认；关闭时直接在后台转换</p></div><span class="switch"><input id="reviewSetting" type="checkbox" aria-label="逐张对照校对"><span aria-hidden="true"></span></span></div>
+  <div class="settings-actions"><button id="settingsClose" type="button">关闭</button><button id="save" class="primary" type="button">保存设置</button></div>
+</section>
+<section id="apiSettings" class="settings-card" hidden>
+  <div class="card-head"><h2>OpenAI API 设置</h2><p>用于图片转公式和 AI 助手。</p></div>
+  <div class="api-form">
+    <span id="apiSource" class="api-source">正在读取…</span>
+    <label for="apiKey">API Key<input id="apiKey" type="password" autocomplete="new-password" spellcheck="false" maxlength="1024" placeholder="已保存时留空即可"></label>
+    <p>手动保存的密钥优先于环境变量和仓库配置，保存在本机；留空不会更改已有密钥。</p>
+    <label for="apiModel">模型<input id="apiModel" type="text" spellcheck="false" maxlength="128" placeholder="例如 gpt-6-astra"></label>
+    <p>文字和图片会发送至 OpenAI，并按 API 用量计费。</p>
+  </div>
+  <div class="settings-actions"><button id="apiClose" type="button">关闭</button><button id="apiSave" class="primary" type="button">保存设置</button></div>
+</section>
+<section id="progress" hidden><h2>转换状态</h2><p id="progressText">正在读取…</p><pre id="progressErrors"></pre><button id="refresh">刷新状态</button><button id="cancel">取消转换</button><button id="progressClose">关闭窗口</button>
+<div id="review" hidden><h3>请校对本张图片</h3><div class="compare"><figure class="panel"><figcaption>原图片</figcaption><div class="image"><img id="reviewOriginal" alt="原图片"></div></figure><figure class="panel result"><figcaption>生成公式</figcaption><div class="image"><img id="reviewPreview" alt="生成公式"></div></figure></div><div><button id="accept" class="primary">替换原图</button><button id="skip">跳过本张</button><button id="stopReview">取消转换</button></div></div>
+<p class="note">转换时可切换幻灯片，关闭本窗口不会停止任务。请保持 PowerPoint 和演示文稿打开；已发送的请求可能产生 API 用量。</p></section>
 <section id="protect" hidden><h2>检查与同步源码</h2><p class="lead">检查当前演示文稿中的公式，将原生标签与源码备份同步。完成后请保存 PPTX。</p><button id="sync" class="primary">检查并同步</button><pre id="syncResult"></pre></section>
-<section id="help" hidden><h2>环境与帮助</h2><p>在一页幻灯片中选中一张或多张未组合的图片，点击“图片转公式”并开始转换。可用“转换设置”调整字号、颜色、对齐和逐张校对。</p><p>识别图片会发送到 OpenAI，并按 API 用量计费。转换过程中保持批量转换窗口和演示文稿打开；失败的原图保留，可选择原图后点击“编辑失败草稿”。</p><p id="capabilities"></p><button id="doctor">检查本机 LaTeX</button><pre id="diagnostics"></pre></section>
+<section id="help" hidden><h2>环境与帮助</h2><p>在一页幻灯片中选中一张或多张未组合的图片，点击“图片转公式”开始后台转换。可用“转换设置”调整字号、颜色、对齐和逐张校对。</p><p>识别图片会发送到 OpenAI，并按 API 用量计费。转换过程中保持 PowerPoint 和演示文稿打开；失败的原图保留，可选择原图后点击“编辑失败草稿”。</p><p id="capabilities"></p><button id="doctor">检查本机 LaTeX</button><pre id="diagnostics"></pre></section>
 <div id="status" role="status" aria-live="polite"></div>
 </main><script src="adapter.js"></script><script src="dialog-bridge.js"></script><script src="utility.js"></script></body></html>

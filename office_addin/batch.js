@@ -1,9 +1,13 @@
-/* PowerPoint batch worker. The pane owns the Office.js context while the
-   service holds only progress, cancellation and transient review state. */
-(function () {
+/* The shared runtime owns the worker so a progress window can be closed
+   without stopping conversion. The same worker also supports the legacy pane. */
+(function (root) {
     'use strict';
-    var $ = function (id) { return document.getElementById(id); };
+    function createWorker(options) {
+    options = options || {};
+    var silentNodes = {};
+    var $ = function (id) { return options.background ? (silentNodes[id] || (silentNodes[id] = {})) : document.getElementById(id); };
     var token = null, items = [], batch = null, settings = null, stopped = false, timer = null, reviewShown = null, ownsBatch = false, ending = false;
+    var starting = false;
     async function api(path, data, retried) {
         if (!token) token = (await (await fetch('/api/session', {cache:'no-store'})).json()).token;
         var response = await fetch('/api/' + path, {method:'POST', headers:{'Content-Type':'application/json','X-Bridge-Token':token}, body:JSON.stringify(data || {})});
@@ -34,10 +38,13 @@
         $('progressText').textContent = state.stage + '\n已处理 ' + count + ' / ' + state.total + '；成功 ' + state.succeeded + '，失败 ' + state.failed + '，跳过 ' + state.skipped + (state.status !== 'running' && remaining ? '，未处理 ' + remaining : '') + '。';
         $('errors').textContent = (state.errors || []).slice(0, 20).join('\n');
         $('cancel').disabled = state.status !== 'running';
-        if (state.review_id && reviewShown !== state.review_id) showReview(state.review_id).catch(showError);
+        if (state.review_id && reviewShown !== state.review_id) {
+            if (options.background) { reviewShown = state.review_id; if (options.onReview) options.onReview(); }
+            else showReview(state.review_id).catch(showError);
+        }
         if (!state.review_id) { $('review').hidden = true; reviewShown = null; }
     }
-    function showError(e) { $('message').textContent = friendly(e); }
+    function showError(e) { $('message').textContent = friendly(e); if (options.onError) options.onError(friendly(e)); }
     async function showReview(id) {
         reviewShown = id; var review = await api('wps/review-get', {id:id});
         if (!batch || batch.review_id !== id) return;
@@ -129,7 +136,7 @@
     async function run() {
         var counts = {succeeded:0, failed:0, skipped:0}, errors = [];
         try {
-            settings = await api('wps/settings'); batch = await api('office/batch/start', {total:items.length}); ownsBatch = true;
+            if (!ownsBatch) { settings = await api('wps/settings'); batch = await api('office/batch/start', {total:items.length}); ownsBatch = true; }
             $('cancel').disabled = false; draw(batch);
             timer = setInterval(function () { if (batch && batch.status === 'running') pulse().catch(function (e) { if (e.cancelled) stopped = true; else showError(e); }); }, 5000);
             for (var i = 0; i < items.length; i++) {
@@ -153,7 +160,28 @@
             if (batch) { batch = await api('office/batch/finish', Object.assign({id:batch.id, errors:errors}, counts)); draw(batch); }
         } catch (e) { showError(e); if (batch && batch.status === 'running') {
             try { batch = await api('office/batch/abort', {id:batch.id}); draw(batch); } catch (ignored) {}
-        } } finally { if (timer) clearInterval(timer); timer = null; $('cancel').disabled = true; }
+        } } finally { if (timer) clearInterval(timer); timer = null; $('cancel').disabled = true; ownsBatch = false; }
+    }
+    async function startBackground() {
+        if (starting || ownsBatch) throw new Error('已有批量转换正在进行，请通过“转换状态”查看。');
+        starting = true;
+        try {
+            var active = await api('office/batch/status');
+            if (active.status === 'running') throw new Error('已有批量转换正在进行，请通过“转换状态”查看。');
+            items = await IguanaOffice.capturePictures();
+            if (!items.some(function (item) { return item.target; })) throw new Error('请先选中至少一张可转换的图片。');
+            settings = await api('wps/settings'); batch = await api('office/batch/start', {total:items.length});
+            stopped = false; ending = false; reviewShown = null; ownsBatch = true;
+            run();
+            return {total:items.length, invalid:items.filter(function (item) { return item.error; }).length};
+        } finally { starting = false; }
+    }
+    if (options.background) {
+        window.addEventListener('pagehide', function () {
+            if (ownsBatch && batch && batch.status === 'running' && token) fetch('/api/office/batch/abort', {method:'POST', keepalive:true,
+                headers:{'Content-Type':'application/json','X-Bridge-Token':token}, body:JSON.stringify({id:batch.id})}).catch(function () {});
+        });
+        return {start:startBackground};
     }
     $('start').onclick = function () { $('start').disabled = true; $('message').textContent = ''; run(); };
     window.addEventListener('pagehide', function () {
@@ -173,4 +201,8 @@
             } catch (e) { $('selection').textContent = friendly(e); }
         }());
     });
-}());
+    return {};
+    }
+    root.IguanaBatchWorker = {create:createWorker};
+    if (document.getElementById('selection')) createWorker();
+}(window));

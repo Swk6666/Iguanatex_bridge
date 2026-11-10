@@ -10,7 +10,7 @@ function fixture(version='1.8') {
         addGeometricShape(type,box){const s=shape(++sequence===1?'new':'new'+sequence,{},'GeometricShape');
             Object.assign(s,box);s.fill={setImage(value){s.fillImage=value;}};s.lineFormat={visible:true};items.push(s);return s;}});
     function shape(id, tags={}, type='Image') {
-        const s = {id,name:'Equation '+id,type,left:25,top:30,width:50,height:20,altTextDescription:'',image:'original png',load(){return this;},
+        const s = {id,name:'Equation '+id,type,left:25,top:30,width:50,height:20,rotation:0,altTextDescription:'',image:'original png',load(){return this;},
             getImageAsBase64(){return {value:this.image};},
             delete(){state.shapes.splice(state.shapes.indexOf(s),1);state.writes.push('delete '+id);if(state.failCommit&&id==='old')throw Error('Commit response lost');},
             setZOrder(op){const i=state.shapes.indexOf(s);state.shapes.splice(i,1);state.shapes.splice(op==='SendToBack'?0:i+1,0,s);}};
@@ -223,13 +223,26 @@ async function test(fn){await fn();count++;}
     });
     await test(async()=>{
         const f=fixture('1.10');f.old.tags.items=[];f.state.selected=[f.old,f.state.shapes[1]];
+        f.old.rotation=27;
         const items=await f.api.capturePictures();assert.equal(items.length,2);
         f.state.selectedSlide='s2';const pixels=await f.api.readPicture(items[0].target);assert.equal(pixels,'original png');
         items[0].target.align='center';await f.api.applyBatch(items[0].target,data);
         assert.deepEqual(f.state.shapes.map(s=>s.id),['new','other']);
         assert.equal(f.state.shapes[0].type,'GeometricShape');assert.equal(f.state.shapes[0].fillImage,btoa(data.svg));
         assert.equal(f.state.shapes[0].altTextDescription,data.alt);assert.equal(f.state.shapes[0].lineFormat.visible,false);
+        assert.equal(f.state.shapes[0].rotation,27);
         await f.api.applyBatch(items[1].target,data);assert.deepEqual(f.state.shapes.map(s=>s.id),['new','new2']);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.old.tags.items=[];f.state.selected=[f.old];
+        const items=await f.api.capturePictures();f.old.rotation=45;
+        await assert.rejects(f.api.applyBatch(items[0].target,data),/变化/);
+        assert.deepEqual(f.state.shapes.map(s=>s.id),['old','other']);
+    });
+    await test(async()=>{
+        const f=fixture('1.10');f.old.rotation=35;const target=await f.api.capture(true);
+        const updated=await f.api.apply(target,data,'frame');
+        assert.equal(updated.original.rotation,35);assert.equal(f.state.shapes[0].rotation,35);
     });
     await test(async()=>{
         const f=fixture('1.10');f.old.tags.items=[];f.state.selected=[f.old];const items=await f.api.capturePictures();

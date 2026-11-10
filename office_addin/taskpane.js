@@ -314,6 +314,12 @@
     if (isRuntime && !window.IguanaDialogClient) {
         var runtimeReady = new Promise(function (resolve) { Office.onReady(resolve); });
         var commandBusy = false;
+        var batchWorker = window.IguanaBatchWorker.create({background:true, onReview:function () {
+            if (window.IguanaDialogHost.isOpen()) window.IguanaDialogHost.notify('图片转换正在等待校对，请查看转换状态。');
+            else window.IguanaDialogHost.open({page:'utility', mode:'status'}, hostOperations()).catch(function () {});
+        }, onError:function (message) {
+            if (window.IguanaDialogHost.isOpen()) window.IguanaDialogHost.notify(message);
+        }});
         async function cancelActive() {
             var current = await api('office/batch/cancel');
             if (current.status === 'running') return '已请求停止转换。';
@@ -340,9 +346,13 @@
                 if (name === 'new') { await newFormula(); await openEditor(); }
                 else if (name === 'edit') { await loadSelection(); await openEditor(); }
                 else if (name === 'draft') { await preparePicture(true); await openEditor(); }
+                else if (name === 'picture') {
+                    await batchWorker.start();
+                    try { await window.IguanaDialogHost.open({page:'utility', mode:'status'}, hostOperations()); }
+                    catch (error) { throw new Error('转换已在后台启动；打开状态窗口失败，请点击“转换状态”查看。'); }
+                }
                 else {
-                    var page = name === 'picture' ? 'batch' : 'utility';
-                    await window.IguanaDialogHost.open({page: page, mode: name,
+                    await window.IguanaDialogHost.open({page: 'utility', mode: name,
                         supportsPictures: Office.context.requirements.isSetSupported('PowerPointApi', '1.10')}, hostOperations());
                 }
             } catch (error) {
@@ -356,7 +366,7 @@
             }
         }
         [['igBridgeNew', 'new'], ['igBridgePicture', 'picture'], ['igBridgeEdit', 'edit'],
-            ['igBridgeStatus', 'status'], ['igBridgeCancel', 'cancel'], ['igBridgeSettings', 'settings'],
+            ['igBridgeStatus', 'status'], ['igBridgeCancel', 'cancel'], ['igBridgeSettings', 'settings'], ['igBridgeApi', 'api'],
             ['igBridgeDraft', 'draft'], ['igBridgeProtect', 'protect'], ['igBridgeHelp', 'help']].forEach(function (item) {
             Office.actions.associate(item[0], function (event) { return command(item[1], event); });
         });

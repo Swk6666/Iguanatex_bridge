@@ -177,8 +177,8 @@ class WpsBridge:
 class OfficeBatch:
     """Small cross-pane status record; images and sources never enter it.
 
-    The worker owns Office.js objects in its task pane.  A lease prevents a
-    closed or crashed pane from leaving the status permanently running.
+    The worker owns Office.js objects in the shared runtime. A lease prevents
+    a closed or crashed runtime from leaving the status permanently running.
     Calls are serialized by the HTTP server's shared lock.
     """
     LEASE_SECONDS = 150
@@ -189,7 +189,7 @@ class OfficeBatch:
     def status(self):
         item = self.record
         if item and item['status'] == 'running' and time.monotonic() - item['heartbeat'] > self.LEASE_SECONDS:
-            item.update(status='interrupted', stage='转换窗口已关闭或失去连接，未处理的原图已保留。', review_id=None)
+            item.update(status='interrupted', stage='后台运行环境已停止或失去连接，未处理的原图已保留。', review_id=None)
         return {k: v for k, v in item.items() if k != 'heartbeat'} if item else {'status': 'idle'}
 
     def start(self, req):
@@ -243,7 +243,7 @@ class OfficeBatch:
         item = self.update(req)
         record = self.record
         if req.get('interrupted'):
-            record.update(status='interrupted', stage='转换窗口已关闭，未处理的原图已保留。')
+            record.update(status='interrupted', stage='后台运行环境已停止，未处理的原图已保留。')
         else:
             record.update(status='cancelled' if item['cancel_requested'] else 'completed',
                           stage='转换已取消。' if item['cancel_requested'] else '转换完成，请保存演示文稿。')

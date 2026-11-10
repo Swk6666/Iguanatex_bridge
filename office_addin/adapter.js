@@ -8,7 +8,7 @@
         }
     }
     function fields() { return 'id,name,type,left,top,width,height' + (supports('1.8') ? ',zOrderPosition' : '') +
-        (supports('1.10') ? ',altTextDescription' : ''); }
+        (supports('1.10') ? ',altTextDescription,rotation' : ''); }
     function tagMap(shape) {
         var tags = {};
         shape.tags.items.forEach(function (t) { tags[t.key.toUpperCase()] = t.value; });
@@ -18,7 +18,7 @@
         var result = {id: shape.id, name: shape.name, type: shape.type, left: shape.left, top: shape.top,
             width: shape.width, height: shape.height, tags: tagMap(shape),
             z: supports('1.8') ? shape.zOrderPosition : null};
-        if (supports('1.10')) result.alt = shape.altTextDescription || '';
+        if (supports('1.10')) { result.alt = shape.altTextDescription || ''; result.rotation = shape.rotation; }
         return result;
     }
     function fingerprint(data) {
@@ -345,6 +345,7 @@
                 if (supports('1.10')) shape.altTextDescription = data.alt;
                 shape.name = target.original ? target.original.name : 'IguanaTex ' + shape.id;
                 shape.left = box.left; shape.top = box.top; shape.width = box.width; shape.height = box.height;
+                if (supports('1.10') && target.original && Number.isFinite(target.original.rotation)) shape.rotation = target.original.rotation;
                 await context.sync();
                 shape.tags.load('items/key,items/value');
                 await context.sync();
@@ -353,8 +354,9 @@
                     throw new Error('PowerPoint 未完整保存源码，已取消替换。');
                 }
                 if (supports('1.10')) {
-                    shape.load('altTextDescription'); await context.sync();
+                    shape.load('altTextDescription,rotation'); await context.sync();
                     if (shape.altTextDescription !== data.alt) throw new Error('PowerPoint 未完整保存源码备份，已取消替换。');
+                    if (target.original && Number.isFinite(target.original.rotation) && Math.abs(shape.rotation - target.original.rotation) > 0.01) throw new Error('PowerPoint 未能保留旋转角度，已取消替换。');
                 }
                 // Keep stacking order when the host provides the stable 1.8 API.
                 if (current.old && supports('1.8')) {
@@ -402,6 +404,7 @@
                 // without changing the user's active slide or selection.
                 var shape = current.slide.shapes.addGeometricShape('Rectangle', box);
                 shape.name = target.original.name; shape.lineFormat.visible = false;
+                if (Number.isFinite(target.original.rotation)) shape.rotation = target.original.rotation;
                 shape.load('id'); await context.sync(); addedId = shape.id;
                 var encoded = data.output === 'svg' ? btoa(unescape(encodeURIComponent(data.svg))) : data.png;
                 shape.fill.setImage(encoded);
@@ -409,11 +412,12 @@
                 Object.keys(expected).forEach(function (key) { shape.tags.add(key, String(expected[key])); });
                 shape.altTextDescription = data.alt;
                 await context.sync();
-                shape.tags.load('items/key,items/value'); shape.load('altTextDescription'); await context.sync();
+                shape.tags.load('items/key,items/value'); shape.load('altTextDescription,rotation'); await context.sync();
                 var saved = tagMap(shape);
                 if (Object.keys(expected).some(function (key) { return saved[key] !== String(expected[key]); }) || shape.altTextDescription !== data.alt) {
                     throw new Error('PowerPoint 未完整保存公式源码，已取消替换。');
                 }
+                if (Number.isFinite(target.original.rotation) && Math.abs(shape.rotation - target.original.rotation) > 0.01) throw new Error('PowerPoint 未能保留旋转角度，已取消替换。');
                 shape.setZOrder('SendToBack');
                 for (var i = 0; i <= target.original.z; i++) shape.setZOrder('BringForward');
                 await context.sync();

@@ -19,6 +19,19 @@
         finally { if (button) button.disabled = false; }
     }
     function conversationId() { try { return window.localStorage.getItem(storageKey); } catch (ignored) { return null; } }
+    function showColor() { $('colorValue').textContent = String($('color').value).toUpperCase(); }
+    function showApiConfig(config) {
+        $('apiModel').value = config.model;
+        $('apiSource').textContent = config.configured ? '当前使用：' + config.key_source : '尚未配置 API Key';
+    }
+    function closeWindow() { if (window.IguanaDialogClient) window.IguanaDialogClient.close(); else window.close(); }
+    $('settingsClose').onclick = $('apiClose').onclick = $('progressClose').onclick = closeWindow;
+    $('color').oninput = showColor;
+    $('apiSave').onclick = function () { return run($('apiSave'), async function () {
+        var result = await api('chat/config', {api_key:$('apiKey').value.trim(), model:$('apiModel').value.trim()});
+        $('apiKey').value = ''; showApiConfig(result);
+        status(result.configured ? '设置已保存，下一次请求生效。' : '尚未配置密钥，请输入 API Key 后保存。');
+    }); };
     async function showProgress(cancel) {
         var batch = await api(cancel ? 'office/batch/cancel' : 'office/batch/status');
         if (batch.status !== 'idle') {
@@ -84,6 +97,9 @@
             } else if (mode === 'settings') {
                 $('settings').hidden = false; settings = await api('wps/settings');
                 $('size').value = settings.point_size; $('color').value = settings.color; $('align').value = settings.align; $('reviewSetting').checked = settings.review;
+                showColor();
+            } else if (mode === 'api') {
+                $('apiSettings').hidden = false; showApiConfig(await api('chat/config'));
             } else if (mode === 'status' || mode === 'cancel') {
                 $('progress').hidden = false; await showProgress(mode === 'cancel');
             } else if (mode === 'protect') {
